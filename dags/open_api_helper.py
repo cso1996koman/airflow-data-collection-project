@@ -3,7 +3,7 @@ import logging
 import xml.etree.ElementTree as ET
 import requests
 from typing import List, Dict
-from dags.publicdataportal_table_name_enum import PublicDataPortalTableName
+from publicdataportal_table_name_enum import PublicDataPortalTableName
 from data_collection_source_name_enum import DATACOLLECTIONSOURCENAME
 class OpenApiHelper:
     def __init__(self):    

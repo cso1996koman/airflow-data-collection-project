@@ -6,9 +6,9 @@ from airflow import DAG
 from airflow.models.dagrun import DagRun
 from airflow.providers.apache.hdfs.hooks.webhdfs import WebHDFSHook
 from pandas import DataFrame
-import yfinance as yf
+import yfinance
 from csv_manager import CsvManager
-from dags.open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dvo import OpenApiXcomDvo
 from airflow.models.taskinstance import TaskInstance
 from airflow.operators.python import get_current_context
 import ast
@@ -35,7 +35,7 @@ class YFinanceUsdToKrwExchangeRateDag:
                 else:
                     yfinanceusdtokrwexchangerate_request_param_dic : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
                     yfinanceusdtokrwexchangerate_request_param_dvo = YFinanceUsdToKrwExchangeRateRequestParamDvo.from_dict(yfinanceusdtokrwexchangerate_request_param_dic)
-                usdtokrwexchangerate_dataframe : DataFrame = yf.download(yfinanceusdtokrwexchangerate_request_param_dvo.ticker, start=yfinanceusdtokrwexchangerate_request_param_dvo.start, end=yfinanceusdtokrwexchangerate_request_param_dvo.end, interval=yfinanceusdtokrwexchangerate_request_param_dvo.interval)
+                usdtokrwexchangerate_dataframe : DataFrame = yfinance.download(yfinanceusdtokrwexchangerate_request_param_dvo.ticker, start=yfinanceusdtokrwexchangerate_request_param_dvo.start, end=yfinanceusdtokrwexchangerate_request_param_dvo.end, interval=yfinanceusdtokrwexchangerate_request_param_dvo.interval)
                 usdtokrwexchangerate_json : dict = usdtokrwexchangerate_dataframe.to_json()
                 open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo(response_json = usdtokrwexchangerate_json)
                 start : datetime = datetime(yfinanceusdtokrwexchangerate_request_param_dvo.start).strptime("%Y-%m-%d")

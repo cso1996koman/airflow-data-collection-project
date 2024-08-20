@@ -12,7 +12,7 @@ from dateutil.relativedelta import relativedelta
 import pytz
 from url_object_factory import UrlObjectFactory
 from kosis_url import KosisUrl, PRDSEENUM
-from dags.open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dvo import OpenApiXcomDvo
 from open_api_helper import OpenApiHelper
 class KosisOpenApiDag:
     @staticmethod

@@ -11,7 +11,7 @@ from fred_request_param_dvo import FredRequestParamDvo
 from airflow.models.taskinstance import TaskInstance
 from airflow.operators.python import get_current_context
 import ast
-import pandas_datareader.data as pdr
+import pandas_datareader.data
 from open_api_xcom_dvo import OpenApiXcomDvo
 class FredKoreanInterestRateDag:
     def create_fred_koreaninterestrate_dag(dag_config_param : dict, dag_id : str, schedule_interval : timedelta, start_date : datetime, default_args : dict) -> DAG:
@@ -35,7 +35,7 @@ class FredKoreanInterestRateDag:
                 else:
                     fred_request_param_dic : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
                     fred_request_param_dvo = FredRequestParamDvo.from_dict(fred_request_param_dic)
-                koreaninterestrate_dataframe : DataFrame = pdr.get_data_fred(fred_request_param_dvo.series, start_date=fred_request_param_dvo.start, end_date=fred_request_param_dvo.end)
+                koreaninterestrate_dataframe : DataFrame = pandas_datareader.get_data_fred(fred_request_param_dvo.series, start=fred_request_param_dvo.start, end=fred_request_param_dvo.end)
                 koreaninterestrate_json : dict = koreaninterestrate_dataframe.to_json()
                 open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo(response_json = koreaninterestrate_json)
                 start : datetime = datetime(fred_request_param_dvo.start).strptime("%Y-%m-%d")

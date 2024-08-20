@@ -8,7 +8,7 @@ from airflow import DAG
 from csv_manager import CsvManager
 from publicdataportal_holiday_url import PublicDataPortalHolidayUrl
 from open_api_helper import OpenApiHelper
-from dags.open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dvo import OpenApiXcomDvo
 from url_object_factory import UrlObjectFactory
 from airflow.operators.python import get_current_context
 class PublicDataPortalHolidayDag:

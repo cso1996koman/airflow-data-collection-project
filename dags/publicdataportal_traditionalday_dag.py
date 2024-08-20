@@ -6,9 +6,9 @@ from airflow.models import DagRun
 from airflow.decorators import dag, task
 from airflow import DAG
 from csv_manager import CsvManager
-from dags.publicdataportal_traditionalday_url import PublicDataPortalTraditionalDayUrl
+from publicdataportal_traditionalday_url import PublicDataPortalTraditionalDayUrl
 from open_api_helper import OpenApiHelper
-from dags.open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dvo import OpenApiXcomDvo
 from url_object_factory import UrlObjectFactory
 from airflow.operators.python import get_current_context
 class PublicDataPortalTraditionalDayDag:

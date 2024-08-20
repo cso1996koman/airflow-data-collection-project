@@ -7,11 +7,11 @@ from publicdataportal_nationalday_dag import PublicDataPortalNationalDayDag
 from publicdataportal_solarterm_dag import PublicDataPortalSolarTermDag
 from publicdataportal_table_name_enum import PublicDataPortalTableName
 from publicdataportal_traditionalday_dag import PublicDataPortalTraditionalDayDag
-from dags.publicdataportal_weatherstatics_dag import PublicDataPortalWeatherStaticsDag
+from publicdataportal_weatherstatics_dag import PublicDataPortalWeatherStaticsDag
 from kosis_open_api_dag import KosisOpenApiDag
 from data_collection_source_name_enum import DATACOLLECTIONSOURCENAME
 from kosis_url import PRDSEENUM, KosisUrl
-from dags.dag_param_dvo import DagParamDvo
+from dag_param_dvo import DagParamDvo
 from url_object_factory import UrlObjectFactory
 from api_admin_dvo import ApiAdminDvo
 from typing import List
@@ -29,14 +29,14 @@ class DagFactory:
             if(dvo.src_nm == DATACOLLECTIONSOURCENAME.KOSIS.value):
                 schedule_interval : timedelta = None
                 start_date : datetime = None                
-                dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                              tb_code = dvo.tb_code,
                              tb_nm = dvo.tb_nm,
                              eng_tb_nm = dvo.eng_tb_nm,
                              uri = dvo.uri,
                              dir_path = dvo.dir_path,
                              api_keys = ["OTYwYjBlMGMyZmM2MmRlZDk0MjdjYWFhZWZmYTMwM2E="])
-                kosis_url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(dag_param_dto.uri)
+                kosis_url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(dag_param_dvo.uri)
                 if kosis_url_obj.prdSe == PRDSEENUM.YEAR.value:
                     schedule_interval = timedelta(days=365)
                     assert(len(kosis_url_obj.startPrdDe) == 4), "InvalidPrdSe"
@@ -59,94 +59,94 @@ class DagFactory:
                 else:
                     assert False, "Invalid prdSe"
                 kosis_url_obj.endPrdDe = kosis_url_obj.startPrdDe
-                dag_param_dto.uri = kosis_url_obj.get_full_url()
-                kosis_open_api_dag = KosisOpenApiDag.create_kosis_open_api_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                               dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_{dag_param_dto.src_nm}_{dag_param_dto.eng_tb_nm}'),
+                dag_param_dvo.uri = kosis_url_obj.get_full_url()
+                kosis_open_api_dag = KosisOpenApiDag.create_kosis_open_api_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                               dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_{dag_param_dvo.src_nm}_{dag_param_dvo.eng_tb_nm}'),
                                                                                schedule_interval=schedule_interval,
                                                                                start_date=start_date,
                                                                                default_args=_default_args)
                 dag_list.append(kosis_open_api_dag)
             elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.PUBLICDATAPORTAL.value):
                 if(dvo.tb_nm == PublicDataPortalTableName.WEATHERSTATICS.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                              tb_code = dvo.tb_code,
                              tb_nm = dvo.tb_nm,
                              eng_tb_nm = dvo.eng_tb_nm,
                              uri = dvo.uri,
                              dir_path = dvo.dir_path,
                              api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
-                    weatheradministration_open_api_dag : PublicDataPortalWeatherStaticsDag = PublicDataPortalWeatherStaticsDag.create_publicdataportal_weatherstatics_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                                                dag_id = dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_WeatherAdministration_{dag_param_dto.eng_tb_nm}'),
+                    weatheradministration_open_api_dag : PublicDataPortalWeatherStaticsDag = PublicDataPortalWeatherStaticsDag.create_publicdataportal_weatherstatics_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                                                dag_id = dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_WeatherAdministration_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                                                 schedule_interval=timedelta(days=1),
                                                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                                                 default_args=_default_args)
                     dag_list.append(weatheradministration_open_api_dag)            
                 elif(dvo.tb_nm == PublicDataPortalTableName.SOLARTERM.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
-                    publicdataportal_solarterm_dag = PublicDataPortalSolarTermDag.create_publicdataportal_solarterm_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                     dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_PublicDataPortal_{dag_param_dto.eng_tb_nm}'),
+                    publicdataportal_solarterm_dag = PublicDataPortalSolarTermDag.create_publicdataportal_solarterm_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                     dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                      schedule_interval=timedelta(days=30),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_solarterm_dag)
                 elif(dvo.tb_nm == PublicDataPortalTableName.HOLIDAY.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
-                    publicdataportal_holiday_dag = PublicDataPortalHolidayDag.create_publicdataportal_holiday_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                 dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_PublicDataPortal_{dag_param_dto.eng_tb_nm}'),
+                    publicdataportal_holiday_dag = PublicDataPortalHolidayDag.create_publicdataportal_holiday_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                 dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                  schedule_interval=timedelta(days=30),
                                                                                                                  start_date=datetime(2015, 1, 1),
                                                                                                                  default_args=_default_args)
                     dag_list.append(publicdataportal_holiday_dag)
                 elif(dvo.tb_nm == PublicDataPortalTableName.NATIONALDAY.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
-                    publicdataportal_nationalday_dag = PublicDataPortalNationalDayDag.create_publicdataportal_nationalday_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                     dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_PublicDataPortal_{dag_param_dto.eng_tb_nm}'),
+                    publicdataportal_nationalday_dag = PublicDataPortalNationalDayDag.create_publicdataportal_nationalday_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                     dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                      schedule_interval=timedelta(days=30),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_nationalday_dag)
                 elif(dvo.tb_nm == PublicDataPortalTableName.Anniversary.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
-                    publicdataportal_anniversary_dag = PublicDataPortalAnniversaryDag.create_publicdataportal_anniversary_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                     dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_PublicDataPortal_{dag_param_dto.eng_tb_nm}'),
+                    publicdataportal_anniversary_dag = PublicDataPortalAnniversaryDag.create_publicdataportal_anniversary_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                     dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                      schedule_interval=timedelta(days=30),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_anniversary_dag)
                 elif(dvo.tb_nm == PublicDataPortalTableName.TRADITIONALDAY.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
-                    publicdataportal_traditionalday_dag = PublicDataPortalTraditionalDayDag.create_publicdataportal_traditionalday_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                     dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_PublicDataPortal_{dag_param_dto.eng_tb_nm}'),
+                    publicdataportal_traditionalday_dag = PublicDataPortalTraditionalDayDag.create_publicdataportal_traditionalday_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                     dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                      schedule_interval=timedelta(days=30),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
@@ -154,73 +154,72 @@ class DagFactory:
                 else:
                     assert False, "Invalid tb_nm"
             elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.LOGISTICSINFOCENTER.value):
-                dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
                                     api_keys = [])                                
-            elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.PANDAS.value):
+            elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.FRED.value):
                 if(dvo.tb_nm == FredTableName.KOREANINTERESTRATE.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
-                                    api_keys = [])
-                    fred_koreaninterestrate_dag = FredKoreanInterestRateDag.create_fred_koreaninterestrate_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_Pandas_{dag_param_dto.eng_tb_nm}'),
+                                    api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
+                    fred_koreaninterestrate_dag = FredKoreanInterestRateDag.create_fred_koreaninterestrate_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=timedelta(days=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                     dag_list.append(fred_koreaninterestrate_dag)
                 elif(dvo.tb_nm == FredTableName.USINTERESTRATE.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
-                                    api_keys = [])
-                    fred_usinterestrate_dag = FredUsInterestRateDag.create_fred_usinterestrate_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_Pandas_{dag_param_dto.eng_tb_nm}'),
+                                    api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
+                    fred_usinterestrate_dag = FredUsInterestRateDag.create_fred_usinterestrate_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=timedelta(days=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                     dag_list.append(fred_usinterestrate_dag)
                 elif(dvo.tb_nm == FredTableName.OILPRICE.value):
-                    dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                    dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
-                                    api_keys = [])
-                    fred_oilprice_dag = FredOilPriceDag.create_fred_oilprice_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_Pandas_{dag_param_dto.eng_tb_nm}'),
+                                    api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
+                    fred_oilprice_dag = FredOilPriceDag.create_fred_oilprice_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=timedelta(days=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                     dag_list.append(fred_oilprice_dag)
                 else:
                     assert False, "Invalid tb_nm"
-                dag_list.append()
             elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.YFINANCE.value):
-                dag_param_dto = DagParamDvo(src_nm = dvo.src_nm,
+                dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                                     tb_code = dvo.tb_code,
                                     tb_nm = dvo.tb_nm,
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
-                                    api_keys = [])
-                yfinance_usdtokrwexchangerate_dag = YFinanceUsdToKrwExchangeRateDag.create_yfinance_usdtokrwexchangerate_dag(dag_config_param=dag_param_dto.to_dict(),
-                                                                                                                dag_id=dag_param_dto.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dto.tb_code}_Yfinance_{dag_param_dto.eng_tb_nm}'),
+                                    api_keys = ["None"])
+                yfinance_usdvokrwexchangerate_dag = YFinanceUsdToKrwExchangeRateDag.create_yfinance_usdtokrwexchangerate_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Yfinance_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=timedelta(days=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
-                dag_list.append(yfinance_usdtokrwexchangerate_dag)
+                dag_list.append(yfinance_usdvokrwexchangerate_dag)
             else:
                 assert False, "Invalid src_nm"                            
         return dag_list        

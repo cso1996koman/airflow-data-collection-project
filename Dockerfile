@@ -11,4 +11,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Switch back to airflow user and install Python dependencies
 USER airflow
-RUN pip install --no-cache-dir joblib==1.2.0 pycaret==3.2.0 pandas scikit-learn requests apache-airflow[hdfs] apache-airflow[hive]
+RUN pip install --no-cache-dir joblib==1.2.0 pycaret==3.2.0 pandas scikit-learn requests apache-airflow[hdfs] apache-airflow[hive] pandas-datareader yfinance

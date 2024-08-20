@@ -9,7 +9,7 @@ from url_object_factory import UrlObjectFactory
 from airflow.operators.python import get_current_context
 from airflow.models import TaskInstance
 from airflow.models import DagRun
-from dags.open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dvo import OpenApiXcomDvo
 class PublicDataPortalWeatherStaticsDag:
     @staticmethod
     def create_publicdataportal_weatherstatics_dag(dag_config_param : dict, dag_id : str, schedule_interval : timedelta, start_date : datetime, default_args : dict) -> DAG:

@@ -11,6 +11,7 @@ class FredRequestParamDvo:
                 'start' : self.start,
                 'end' : self.end,
                 'api_key' : self.api_key}
-        def from_dict(self, data : dict):
+        @staticmethod
+        def from_dict(data : dict):
               return FredRequestParamDvo(data['series'], data['start'], data['end'], data['api_key'])
         
