@@ -49,7 +49,25 @@ class ApiAdminDao:
             return api_admin_dvos
         except Exception as e:
             logging.error(f"Error in selectAll: {e}")
-            return []
+    def selectbyTbNm(self, tb_nm) -> ApiAdminDvo:
+        try:
+            self.cursor.execute(f"SELECT * FROM api_admin_tb WHERE tb_nm = '{tb_nm}'")
+            result = self.cursor.fetchone()
+            api_admin_dvo = ApiAdminDvo(
+                src_nm=result[0],
+                tb_nm=result[1],
+                tb_code=result[2],
+                version=result[3],
+                uri=result[4],
+                created_at=result[5],
+                dir_path=result[6],
+                column1=result[7],
+                eng_tb_nm=result[8]
+            )
+            return api_admin_dvo
+        except Exception as e:
+            logging.error(f"Error in selectbyTbNm: {e}")
+            
     def close(self):
         self.cursor.close()
         self.connection.close()

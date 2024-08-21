@@ -24,6 +24,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/tmp
     - ${AIRFLOW_PROJ_DIR:-.}/myenv:/opt/airflow/myenv
+    - ${AIRFLOW_PROJ_DIR:-.}/opt/airflow/data/logisticinfocenter:/opt/airflow/data/logisticinfocenter
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on

@@ -1,5 +1,6 @@
 from airflow import DAG
 from datetime import datetime, timedelta
+from dags.logisticsinfocenter_dag import LogisticsInfoCenter
 from publicdataportal_anniversary_dag import PublicDataPortalAnniversaryDag
 from publicdataportal_holiday_dag import PublicDataPortalHolidayDag
 from publicdataportal_nationalday_dag import PublicDataPortalNationalDayDag
@@ -160,7 +161,13 @@ class DagFactory:
                                     eng_tb_nm = dvo.eng_tb_nm,
                                     uri = dvo.uri,
                                     dir_path = dvo.dir_path,
-                                    api_keys = [])                                
+                                    api_keys = [])
+                logisticsinfocenter_dag = LogisticsInfoCenter.create_logisticsinfocenter_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                             dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_LogisticsInfoCenter_{dag_param_dvo.eng_tb_nm}'),
+                                                                                             schedule_interval=relativedelta(days=1),
+                                                                                             start_date=datetime(2015, 1, 1),
+                                                                                             default_args=_default_args)
+                dag_list.append(logisticsinfocenter_dag)                                                
             elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.FRED.value):
                 if(dvo.tb_nm == FredTableName.KOREANINTERESTRATE.value):
                     dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
