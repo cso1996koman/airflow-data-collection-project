@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-
-
 @dataclass
 class PublicDataPortalSolarTermUrl:
     baseUrl : str

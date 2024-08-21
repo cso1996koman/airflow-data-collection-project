@@ -16,7 +16,8 @@ class YFinanceUsdToKrwExchangeRateRequestParamDvo:
                 "period": self.period,
                 "api_key": self.api_key
             }
-        def from_dict(self, data_dict : dict):
+        @staticmethod
+        def from_dict(data_dict : dict):
               return YFinanceUsdToKrwExchangeRateRequestParamDvo(
                   ticker=data_dict['ticker'],
                   start=data_dict['start'],

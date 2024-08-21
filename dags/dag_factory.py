@@ -1,6 +1,5 @@
 from airflow import DAG
 from datetime import datetime, timedelta
-from datetime import datetime, timedelta
 from publicdataportal_anniversary_dag import PublicDataPortalAnniversaryDag
 from publicdataportal_holiday_dag import PublicDataPortalHolidayDag
 from publicdataportal_nationalday_dag import PublicDataPortalNationalDayDag
@@ -20,6 +19,7 @@ from fred_koreaninterestrate_dag import FredKoreanInterestRateDag
 from fred_usinterestrate_dag import FredUsInterestRateDag
 from fred_oilprice_dag import FredOilPriceDag
 from yfinance_usdtokrwexchangerate_dag import YFinanceUsdToKrwExchangeRateDag
+from dateutil.relativedelta import relativedelta
 class DagFactory:
     @staticmethod
     def dag_factory(_default_args : dict, _api_admin_dvos : List[ApiAdminDvo]) -> List[DAG]:
@@ -27,7 +27,7 @@ class DagFactory:
         for api_admin_dvo in _api_admin_dvos:
             dvo : ApiAdminDvo = api_admin_dvo
             if(dvo.src_nm == DATACOLLECTIONSOURCENAME.KOSIS.value):
-                schedule_interval : timedelta = None
+                schedule_interval : relativedelta = None
                 start_date : datetime = None                
                 dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
                              tb_code = dvo.tb_code,
@@ -38,17 +38,17 @@ class DagFactory:
                              api_keys = ["OTYwYjBlMGMyZmM2MmRlZDk0MjdjYWFhZWZmYTMwM2E="])
                 kosis_url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(dag_param_dvo.uri)
                 if kosis_url_obj.prdSe == PRDSEENUM.YEAR.value:
-                    schedule_interval = timedelta(days=365)
+                    schedule_interval = relativedelta(days=365)
                     assert(len(kosis_url_obj.startPrdDe) == 4), "InvalidPrdSe"
                     start_date_str : str = f"{kosis_url_obj.startPrdDe}-01-01"
                     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")                    
                 elif kosis_url_obj.prdSe == PRDSEENUM.MONTH.value:
-                    schedule_interval = timedelta(days=30)
+                    schedule_interval = relativedelta(days=30)
                     assert(len(kosis_url_obj.startPrdDe) == 6), "InvalidPrdSe"
                     start_date_str : str = f"{kosis_url_obj.startPrdDe[0:4]}-{kosis_url_obj.startPrdDe[4:6]}-01"
                     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
                 elif kosis_url_obj.prdSe == PRDSEENUM.QUARTER.value:
-                    schedule_interval = timedelta(days=90)
+                    schedule_interval = relativedelta(days=90)
                     # 1분기 kosis_url_obj.startPrdDe : 20XX-01, 2분기 kosis_url_obj.startPrdDe : 20XX-02, 3분기 kosis_url_obj.startPrdDe : 20XX-03, 4분기 kosis_url_obj.startPrdDe : 20XX-04
                     assert(len(kosis_url_obj.startPrdDe) == 6), "InvalidPrdSe"
                     month : int = int(kosis_url_obj.startPrdDe[5:6])
@@ -76,8 +76,8 @@ class DagFactory:
                              dir_path = dvo.dir_path,
                              api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     weatheradministration_open_api_dag : PublicDataPortalWeatherStaticsDag = PublicDataPortalWeatherStaticsDag.create_publicdataportal_weatherstatics_dag(dag_config_param=dag_param_dvo.to_dict(),
-                                                                                                                                                dag_id = dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_WeatherAdministration_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                                                schedule_interval=timedelta(days=1),
+                                                                                                                                                dag_id = dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDatPortal_{dag_param_dvo.eng_tb_nm}'),
+                                                                                                                                                schedule_interval=relativedelta(days=1),
                                                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                                                 default_args=_default_args)
                     dag_list.append(weatheradministration_open_api_dag)            
@@ -91,7 +91,7 @@ class DagFactory:
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     publicdataportal_solarterm_dag = PublicDataPortalSolarTermDag.create_publicdataportal_solarterm_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                      dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                     schedule_interval=timedelta(days=30),
+                                                                                                                     schedule_interval=relativedelta(months=1),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_solarterm_dag)
@@ -105,7 +105,7 @@ class DagFactory:
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     publicdataportal_holiday_dag = PublicDataPortalHolidayDag.create_publicdataportal_holiday_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                  dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                 schedule_interval=timedelta(days=30),
+                                                                                                                 schedule_interval=relativedelta(months=1),
                                                                                                                  start_date=datetime(2015, 1, 1),
                                                                                                                  default_args=_default_args)
                     dag_list.append(publicdataportal_holiday_dag)
@@ -119,7 +119,7 @@ class DagFactory:
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     publicdataportal_nationalday_dag = PublicDataPortalNationalDayDag.create_publicdataportal_nationalday_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                      dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                     schedule_interval=timedelta(days=30),
+                                                                                                                     schedule_interval=relativedelta(months=1),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_nationalday_dag)
@@ -133,7 +133,7 @@ class DagFactory:
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     publicdataportal_anniversary_dag = PublicDataPortalAnniversaryDag.create_publicdataportal_anniversary_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                      dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                     schedule_interval=timedelta(days=30),
+                                                                                                                     schedule_interval=relativedelta(months=1),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_anniversary_dag)
@@ -147,7 +147,7 @@ class DagFactory:
                                     api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     publicdataportal_traditionalday_dag = PublicDataPortalTraditionalDayDag.create_publicdataportal_traditionalday_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                      dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDataPortal_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                     schedule_interval=timedelta(days=30),
+                                                                                                                     schedule_interval=relativedelta(months=1),
                                                                                                                      start_date=datetime(2015, 1, 1),
                                                                                                                      default_args=_default_args)
                     dag_list.append(publicdataportal_traditionalday_dag)
@@ -172,7 +172,7 @@ class DagFactory:
                                     api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
                     fred_koreaninterestrate_dag = FredKoreanInterestRateDag.create_fred_koreaninterestrate_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                 dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                schedule_interval=timedelta(days=1),
+                                                                                                                schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                     dag_list.append(fred_koreaninterestrate_dag)
@@ -186,7 +186,7 @@ class DagFactory:
                                     api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
                     fred_usinterestrate_dag = FredUsInterestRateDag.create_fred_usinterestrate_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                 dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                schedule_interval=timedelta(days=1),
+                                                                                                                schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                     dag_list.append(fred_usinterestrate_dag)
@@ -200,7 +200,7 @@ class DagFactory:
                                     api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
                     fred_oilprice_dag = FredOilPriceDag.create_fred_oilprice_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                 dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                schedule_interval=timedelta(days=1),
+                                                                                                                schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                     dag_list.append(fred_oilprice_dag)
@@ -216,7 +216,7 @@ class DagFactory:
                                     api_keys = ["None"])
                 yfinance_usdvokrwexchangerate_dag = YFinanceUsdToKrwExchangeRateDag.create_yfinance_usdtokrwexchangerate_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                 dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Yfinance_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                schedule_interval=timedelta(days=1),
+                                                                                                                schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
                 dag_list.append(yfinance_usdvokrwexchangerate_dag)

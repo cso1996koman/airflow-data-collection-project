@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 import logging
 from dateutil.relativedelta import relativedelta
 from airflow.decorators import dag, task
@@ -31,20 +32,22 @@ class YFinanceUsdToKrwExchangeRateDag:
                 if(prev_task_instance is None):                    
                     yfinanceusdtokrwexchangerate_request_param_str : str = dag_config_param['uri']
                     yfinanceusdtokrwexchangerate_request_param_dic : dict = ast.literal_eval(yfinanceusdtokrwexchangerate_request_param_str)
+                    logging.info(f"yfinanceusdtokrwexchangerate_request_param_dic : {yfinanceusdtokrwexchangerate_request_param_dic.__str__()}")
                     yfinanceusdtokrwexchangerate_request_param_dvo = YFinanceUsdToKrwExchangeRateRequestParamDvo.from_dict(yfinanceusdtokrwexchangerate_request_param_dic)
                 else:
                     yfinanceusdtokrwexchangerate_request_param_dic : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
+                    logging.info(f"yfinanceusdtokrwexchangerate_request_param_dic : {yfinanceusdtokrwexchangerate_request_param_dic.__str__()}")
                     yfinanceusdtokrwexchangerate_request_param_dvo = YFinanceUsdToKrwExchangeRateRequestParamDvo.from_dict(yfinanceusdtokrwexchangerate_request_param_dic)
                 usdtokrwexchangerate_dataframe : DataFrame = yfinance.download(yfinanceusdtokrwexchangerate_request_param_dvo.ticker, start=yfinanceusdtokrwexchangerate_request_param_dvo.start, end=yfinanceusdtokrwexchangerate_request_param_dvo.end, interval=yfinanceusdtokrwexchangerate_request_param_dvo.interval)
-                usdtokrwexchangerate_json : dict = usdtokrwexchangerate_dataframe.to_json()
+                usdtokrwexchangerate_json : dict = json.loads(usdtokrwexchangerate_dataframe.to_json())
                 open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo(response_json = usdtokrwexchangerate_json)
-                start : datetime = datetime(yfinanceusdtokrwexchangerate_request_param_dvo.start).strptime("%Y-%m-%d")
-                end : datetime = datetime(yfinanceusdtokrwexchangerate_request_param_dvo.end).strptime("%Y-%m-%d")
-                start = start + relativedelta(days=1)
-                end = start
+                start : datetime = datetime.strptime(yfinanceusdtokrwexchangerate_request_param_dvo.start, "%Y-%m-%d")
+                end : datetime = datetime.strptime(yfinanceusdtokrwexchangerate_request_param_dvo.end, "%Y-%m-%d")
+                start = start + relativedelta(months=1)
+                end = end + relativedelta(months=1)
                 yfinanceusdtokrwexchangerate_request_param_dvo.start = start.strftime("%Y-%m-%d")
                 yfinanceusdtokrwexchangerate_request_param_dvo.end = end.strftime("%Y-%m-%d")
-                open_api_xcom_dvo.uri = yfinanceusdtokrwexchangerate_request_param_dvo.to_dict()
+                open_api_xcom_dvo.next_request_url = yfinanceusdtokrwexchangerate_request_param_dvo.to_dict()
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=open_api_xcom_dvo.to_dict())                
             @task
             def open_api_csv_save():
@@ -56,7 +59,8 @@ class YFinanceUsdToKrwExchangeRateDag:
                 usdtokrwexchangerate_json : dict = open_api_xcom_dvo.response_json
                 csv_manager = CsvManager()
                 csv_dir_path : str = dag_config_param['dir_path']
-                open_api_xcom_dvo.uri['dir_path'] = csv_dir_path
+                csv_dir_path = csv_dir_path[1:csv_dir_path.__len__()]
+                open_api_xcom_dvo.csv_file_path = csv_dir_path
                 cur_dag_run_execution_date : datetime = cur_dag_run.execution_date
                 csv_manager.save_csv(usdtokrwexchangerate_json, csv_dir_path.replace("TIMESTAMP", cur_dag_run_execution_date.strftime("%Y-%m-%d")))
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=open_api_xcom_dvo.to_dict())
@@ -66,7 +70,7 @@ class YFinanceUsdToKrwExchangeRateDag:
                 cur_dag_run : DagRun = context['dag_run']
                 cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')                
                 open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"))
-                csv_dir_path : str = open_api_xcom_dvo.uri['dir_path']
+                csv_dir_path : str = open_api_xcom_dvo.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
                     hdfs_client = hdfs_hook.get_conn()

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 import logging
 from dateutil.relativedelta import relativedelta
 from airflow.decorators import dag, task
@@ -32,19 +33,23 @@ class FredOilPriceDag:
                     fred_request_param_str : str = dag_config_param['uri']
                     fred_request_param_dic : dict = ast.literal_eval(fred_request_param_str)
                     fred_request_param_dvo = FredRequestParamDvo.from_dict(fred_request_param_dic)
+                    fred_request_param_dvo.end = datetime.strftime(datetime.strptime(fred_request_param_dvo.start , "%Y-%m-%d") + relativedelta(months=1), "%Y-%m-%d")
                 else:
                     fred_request_param_dic : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
+                    fred_request_param_dic = fred_request_param_dic.get('next_request_url',{})
                     fred_request_param_dvo = FredRequestParamDvo.from_dict(fred_request_param_dic)
+                    logging.info(f"fred_request_param_dvo: {fred_request_param_dvo.series}{fred_request_param_dvo.start}{fred_request_param_dvo.end}{fred_request_param_dvo.api_key}")
                 oilprice_dataframe : DataFrame = pandas_datareader.get_data_fred(fred_request_param_dvo.series, start=fred_request_param_dvo.start, end=fred_request_param_dvo.end)
                 oilprice_dataframe.index = oilprice_dataframe.index.strftime("%Y-%m-%d")
-                oilprice_json : dict = oilprice_dataframe.to_json().get('DCOILWTICO',{})
+                oilprice_json : dict = json.loads(oilprice_dataframe.to_json()).get('DCOILWTICO',{})
                 open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo(response_json = oilprice_json)
                 start : datetime = datetime.strptime(fred_request_param_dvo.start, "%Y-%m-%d")
                 end : datetime = datetime.strptime(fred_request_param_dvo.end, "%Y-%m-%d")
-                start = start + relativedelta(days=1)
-                end = start
+                start = start + relativedelta(months=1)
+                end = end + relativedelta(months=1)
                 fred_request_param_dvo.start = start.strftime("%Y-%m-%d")
                 fred_request_param_dvo.end = end.strftime("%Y-%m-%d")
+                logging.info(f"fred_request_param_dvo: {fred_request_param_dvo.series}{fred_request_param_dvo.start}{fred_request_param_dvo.end}{fred_request_param_dvo.api_key}")
                 open_api_xcom_dvo.next_request_url = fred_request_param_dvo.to_dict()
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=open_api_xcom_dvo.to_dict())                
             @task

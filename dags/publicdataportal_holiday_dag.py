@@ -44,7 +44,7 @@ class PublicDataPortalHolidayDag:
                 response_json = open_api_helper.get_response(request_url, dag_config_param['src_nm'], dag_config_param['tb_nm'])
                 request_url_obj : PublicDataPortalHolidayUrl = UrlObjectFactory.createPublicDataPortalHolidayUrl(request_url)
                 next_request_url_obj : PublicDataPortalHolidayUrl = UrlObjectFactory.createPublicDataPortalHolidayUrl(request_url)
-                next_request_url_datetime_obj : datetime = datetime(request_url_obj.solYear, request_url_obj.solMonth, 1) + relativedelta(months=1)
+                next_request_url_datetime_obj : datetime = datetime.strptime(f"{request_url_obj.solYear}-{request_url_obj.solMonth}-01","%Y-%m-%d") + relativedelta(months=1)
                 next_request_url_obj.solYear = next_request_url_datetime_obj.strftime('%Y')
                 next_request_url_obj.solMonth = next_request_url_datetime_obj.strftime('%m')
                 next_request_url = next_request_url_obj.get_full_url()
@@ -57,9 +57,10 @@ class PublicDataPortalHolidayDag:
                 cur_task_instance = context['task_instance']
                 cur_dag_run : DagRun = context['dag_run']
                 prev_task_instance : TaskInstance = cur_dag_run.get_task_instance('open_api_request')
-                xcom_dto : OpenApiXcomDvo = prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{prev_task_instance.run_id}")
+                xcom_dto : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{prev_task_instance.run_id}"))
                 assert xcom_dto is not None
-                csv_file_path : str = f"{dag_config_param['csv_file_path']}".replace("TIMESTAMP", cur_dag_run.execution_date.strftime('%Y%m'))
+                csv_file_path : str = f"{dag_config_param['dir_path']}".replace("TIMESTAMP", cur_dag_run.execution_date.strftime('%Y%m'))
+                csv_file_path = csv_file_path[1:csv_file_path.__len__()]
                 csv_manager = CsvManager()
                 csv_manager.save_csv(json_data = xcom_dto.response_json, csv_path = csv_file_path)
                 xcom_dict : dict = xcom_dto.to_dict()
@@ -70,11 +71,11 @@ class PublicDataPortalHolidayDag:
                 context = get_current_context()
                 cur_dag_run : DagRun = context['dag_run']
                 prev_task_instance : TaskInstance = cur_dag_run.get_task_instance('open_api_csv_save')
-                xcom_dto : OpenApiXcomDvo = prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_csv_save_{prev_task_instance.run_id}")
+                xcom_dto : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_csv_save_{prev_task_instance.run_id}"))
                 assert xcom_dto is not None
                 csv_file_path : str = xcom_dto.csv_file_path
                 hdfs_file_path : str = csv_file_path
-                WebHDFSHook.webhdfs_conn_id = 'local_webhdfs'
+                WebHDFSHook.webhdfs_conn_id = 'local_hdfs'
                 webhdfs_hook = WebHDFSHook()
                 webhdfs_hook.load_file(csv_file_path, hdfs_file_path)
             open_api_request_task = open_api_request()
