@@ -2,7 +2,8 @@ import json
 import logging
 import xmltodict
 import requests
-from typing import List, Dict
+from typing import List, Dict, Union
+from url_object_factory import UrlObjectFactory
 from kosis_url import OBJTYPE, KosisUrl
 from publicdataportal_table_name_enum import PublicDataPortalTableName
 from data_collection_source_name_enum import DATACOLLECTIONSOURCENAME
@@ -18,8 +19,9 @@ class OpenApiHelper:
                 break
             param_list.append(f"{part}+")
         return param_list
-    def get_appeneded_response_bymulti_unit_param(self, url_obj : KosisUrl, unit_params: List[str], obj_type : str) -> Dict:
-        merged_json_responses : dict = None
+    def get_appeneded_response_bymulti_unit_param(self, xcom_request_url_obj : KosisUrl, unit_params: List[str], obj_type : str) -> Dict:
+        url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(xcom_request_url_obj.get_full_url())
+        merged_json_responses : List[Dict] = None
         for param in unit_params:
             logging.info(f"param : {param}, paramType : {type(param)}")
             if obj_type == OBJTYPE.OBJL1.value:
@@ -40,21 +42,21 @@ class OpenApiHelper:
                 url_obj.objL8 = param
             else:
                 assert False, f"Invalid obj_type: {obj_type}"
-            logging.info(f"appended_response_url_obj.get_full_url() : {url_obj.get_full_url()}")
-            response : requests.Response = requests.get(url_obj.get_full_url())
-            logging.info(f"response content : {response.content}")
-            logging.info(f"response content : {response.json()}")
+            request_url : str = url_obj.get_full_url().strip()
+            response : requests.Response = requests.get(request_url)
             if response.status_code == 200:
                 # KosisErrorResponseMessageDict : {"err": "errNo", "errMsg": "errMessage"}
-                response_json : dict = response.json()
-                response_json_key_list : list = list(response_json.keys())
-                if response_json_key_list[0] == 'err':
-                    logging.info(f"Error fetching data for url : {url_obj.get_full_url()} , errorMessage : {response_json.get('errMsg')}")
-                    continue
+                response_json : Union[Dict, List[Dict]] = response.json()
+                logging.info(f"response_json : {response_json}")
+                if type(response_json) == dict:
+                    if response_json.get('err') is not None:
+                        logging.info(f"Error fetching data for url : {url_obj.get_full_url()} , errorMessage : {response_json.get('errMsg')}")
+                        continue
                 if merged_json_responses is None:
                     merged_json_responses = response.json()
                 else:
-                    merged_json_responses.update(response.json())
+                    response_json : List[Dict] = response.json()
+                    merged_json_responses = merged_json_responses + response_json
             else:
                 print(f"Error fetching data for param {param}: {response.status_code}")
         return merged_json_responses

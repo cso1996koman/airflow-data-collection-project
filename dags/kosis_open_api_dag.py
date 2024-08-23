@@ -65,42 +65,42 @@ class KosisOpenApiDag:
                 cur_request_url_obj.apiKey = dag_config_param['api_keys']
                 open_api_helper_obj = OpenApiHelper()
                 # 다중 파라미터 형태 요청
-                if(cur_request_url_obj.objL1 != "All" and cur_request_url_obj.objL1 != ""):
+                if(not cur_request_url_obj.objL1.__contains__("ALL") and cur_request_url_obj.objL1 != ""):
                     # objL1 : 1+2+3+4+5+...n+
                     # objL1 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL1)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL1.value)
-                elif(cur_request_url_obj.objL2 != "All" and cur_request_url_obj.objL2 != ""):
+                elif(not cur_request_url_obj.objL2.__contains__("ALL") and cur_request_url_obj.objL2 != ""):
                     # objL2 = 1+2+3+4+5+...n+
                     # objL2 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL2)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL2.value)
-                elif(cur_request_url_obj.objL3 != "All" and cur_request_url_obj.objL3 != ""):
+                elif(not cur_request_url_obj.objL3.__contains__("ALL") and cur_request_url_obj.objL3 != ""):
                     # objL3 = 1+2+3+4+5+...n+
                     # objL3 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL3)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL3.value)
-                elif(cur_request_url_obj.objL4 != "All" and cur_request_url_obj.objL4 != ""):
+                elif(not cur_request_url_obj.objL4.__contains__("ALL") and cur_request_url_obj.objL4 != ""):
                     # objL4 = 1+2+3+4+5+...n+
                     # objL4 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL4)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL4.value)
-                elif(cur_request_url_obj.objL5 != "All" and cur_request_url_obj.objL5 != ""):
+                elif(not cur_request_url_obj.objL5.__contains__("ALL") and cur_request_url_obj.objL5 != ""):
                     # objL5 = 1+2+3+4+5+...n+
                     # objL5 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL5)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL5.value)
-                elif(cur_request_url_obj.objL6 != "All" and cur_request_url_obj.objL6 != ""):
+                elif(not cur_request_url_obj.objL6.__contains__("ALL") and cur_request_url_obj.objL6 != ""):
                     # objL6 = 1+2+3+4+5+...n+
                     # objL6 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL6)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL6.value)
-                elif(cur_request_url_obj.objL7 != "All" and cur_request_url_obj.objL7 != ""):
+                elif(not cur_request_url_obj.objL7.__contains__("ALL") and cur_request_url_obj.objL7 != ""):
                     # objL7 = 1+2+3+4+5+...n+
                     # objL7 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL7)
                     response : dict = open_api_helper_obj.get_appeneded_response_bymulti_unit_param(cur_request_url_obj, obj_unit_params, OBJTYPE.OBJL7.value)
-                elif(cur_request_url_obj.objL8 != "All" and cur_request_url_obj.objL8 != ""):
+                elif(not cur_request_url_obj.objL8.__contains__("ALL") and cur_request_url_obj.objL8 != ""):
                     # objL8 = 1+2+3+4+5+...n+
                     # objL8 unit param : 1+, 2+, 3+, 4+, 5+ ,..., n+
                     obj_unit_params : List[str] = open_api_helper_obj.get_multi_unit_param(cur_request_url_obj.objL8)
