@@ -9,7 +9,7 @@ from url_object_factory import UrlObjectFactory
 from airflow.operators.python import get_current_context
 from airflow.models import TaskInstance
 from airflow.models import DagRun
-from open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dto import OpenApiXcomDto
 class PublicDataPortalWeatherStaticsDag:
     @staticmethod
     def create_publicdataportal_weatherstatics_dag(dag_config_param : dict, dag_id : str, schedule_interval : timedelta, start_date : datetime, default_args : dict) -> DAG:
@@ -39,7 +39,7 @@ class PublicDataPortalWeatherStaticsDag:
                 else:
                     prev_task_instance_xcom_dict : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{prev_task_instance.run_id}")
                     assert prev_task_instance_xcom_dict is not None
-                    prev_task_instance_xcom_dto = OpenApiXcomDvo.from_dict(prev_task_instance_xcom_dict)  
+                    prev_task_instance_xcom_dto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)  
                     request_url = prev_task_instance_xcom_dto.next_request_url
                     weatheradministration_url_obj = UrlObjectFactory.createWeatherAdministrationUrl(request_url)
                 open_api_helper = OpenApiHelper()
@@ -56,7 +56,7 @@ class PublicDataPortalWeatherStaticsDag:
                     endDt_datetime_obj : datetime = startDt_datetime_obj + reamining_days_datetime_obj
                     weatheradministration_url_obj.endDt = endDt_datetime_obj.strftime('%Y%m%d')
                 next_request_url = weatheradministration_url_obj.getFullUrl()
-                open_api_xcom_dto = OpenApiXcomDvo(next_request_url = next_request_url, response_json = response_json)
+                open_api_xcom_dto = OpenApiXcomDto(next_request_url = next_request_url, response_json = response_json)
                 cur_task_instance.xcom_push(key=f"{dag_id}_open_api_request_{cur_task_instance.run_id}", value=open_api_xcom_dto.to_dict())
             @task
             def open_api_csv_save():
@@ -66,7 +66,7 @@ class PublicDataPortalWeatherStaticsDag:
                 open_api_request_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id = 'open_api_request')
                 open_api_request_task_instance_xcom_dict : dict = open_api_request_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{open_api_request_task_instance.run_id}")
                 assert open_api_request_task_instance_xcom_dict is not None
-                open_api_request_task_instance_xcom_dto : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(open_api_request_task_instance_xcom_dict)
+                open_api_request_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(open_api_request_task_instance_xcom_dict)
                 response_json = open_api_request_task_instance_xcom_dto.response_json
                 next_request_url_obj = UrlObjectFactory.createWeatherAdministrationUrl(open_api_request_task_instance_xcom_dto.next_request_url)
                 csv_file_path : str = dag_config_param['dir_path']
@@ -82,7 +82,7 @@ class PublicDataPortalWeatherStaticsDag:
                 cur_dag_run = context['dag_run']
                 open_api_csv_save_task_instance = cur_dag_run.get_task_instance(task_id = 'open_api_csv_save')
                 open_api_csv_save_task_instance_xcom_dict : dict = open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_open_api_csv_save_{cur_dag_run.run_id}")
-                open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(open_api_csv_save_task_instance_xcom_dict)                
+                open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(open_api_csv_save_task_instance_xcom_dict)                
                 csv_file_path = open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 hdfs_file_path = csv_file_path
                 webhdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')

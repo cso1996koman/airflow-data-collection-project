@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 from dateutil.relativedelta import relativedelta
 from airflow.providers.apache.hdfs.hooks.webhdfs import WebHDFSHook
 from airflow.models import TaskInstance
@@ -8,7 +9,7 @@ from airflow import DAG
 from csv_manager import CsvManager
 from publicdataportal_holiday_url import PublicDataPortalHolidayUrl
 from open_api_helper import OpenApiHelper
-from open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dto import OpenApiXcomDto
 from url_object_factory import UrlObjectFactory
 from airflow.operators.python import get_current_context
 class PublicDataPortalHolidayDag:
@@ -38,7 +39,7 @@ class PublicDataPortalHolidayDag:
                 else:
                     prev_task_instance_xcom_dict : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{prev_task_instance.run_id}")
                     assert prev_task_instance_xcom_dict is not None
-                    prev_task_instance_xcom_dto = OpenApiXcomDvo.from_dict(prev_task_instance_xcom_dict)
+                    prev_task_instance_xcom_dto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)
                     request_url = prev_task_instance_xcom_dto.next_request_url
                 open_api_helper = OpenApiHelper()
                 response_json = open_api_helper.get_response(request_url, dag_config_param['src_nm'], dag_config_param['tb_nm'])
@@ -48,7 +49,7 @@ class PublicDataPortalHolidayDag:
                 next_request_url_obj.solYear = next_request_url_datetime_obj.strftime('%Y')
                 next_request_url_obj.solMonth = next_request_url_datetime_obj.strftime('%m')
                 next_request_url = next_request_url_obj.get_full_url()
-                open_api_xcom_dto = OpenApiXcomDvo(next_request_url = next_request_url, response_json = response_json)
+                open_api_xcom_dto = OpenApiXcomDto(next_request_url = next_request_url, response_json = response_json)
                 open_api_xcom_dict = open_api_xcom_dto.to_dict()
                 cur_task_instance.xcom_push(f"{dag_id}_open_api_request_{cur_task_instance.run_id}",value = open_api_xcom_dict)
             @task
@@ -57,7 +58,7 @@ class PublicDataPortalHolidayDag:
                 cur_task_instance = context['task_instance']
                 cur_dag_run : DagRun = context['dag_run']
                 prev_task_instance : TaskInstance = cur_dag_run.get_task_instance('open_api_request')
-                xcom_dto : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{prev_task_instance.run_id}"))
+                xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{prev_task_instance.run_id}"))
                 assert xcom_dto is not None
                 csv_file_path : str = f"{dag_config_param['dir_path']}".replace("TIMESTAMP", cur_dag_run.execution_date.strftime('%Y%m'))
                 csv_file_path = csv_file_path[1:csv_file_path.__len__()]
@@ -71,13 +72,16 @@ class PublicDataPortalHolidayDag:
                 context = get_current_context()
                 cur_dag_run : DagRun = context['dag_run']
                 prev_task_instance : TaskInstance = cur_dag_run.get_task_instance('open_api_csv_save')
-                xcom_dto : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_csv_save_{prev_task_instance.run_id}"))
+                xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_open_api_csv_save_{prev_task_instance.run_id}"))
                 assert xcom_dto is not None
                 csv_file_path : str = xcom_dto.csv_file_path
-                hdfs_file_path : str = csv_file_path
-                WebHDFSHook.webhdfs_conn_id = 'local_hdfs'
-                webhdfs_hook = WebHDFSHook()
-                webhdfs_hook.load_file(csv_file_path, hdfs_file_path)
+                try:
+                    hdfs_file_path : str = csv_file_path
+                    webhdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
+                    hdfs_client = webhdfs_hook.get_conn()
+                    hdfs_client.upload(hdfs_file_path, csv_file_path)
+                except Exception as e:
+                    logging.error(f"Error: {e}")
             open_api_request_task = open_api_request()
             open_api_csv_save_task = open_api_csv_save()
             open_api_hdfs_save_task = open_api_hdfs_save()

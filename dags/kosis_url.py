@@ -28,10 +28,20 @@ class KosisUrl:
                 f"&jsonVD={self.jsonVD}&prdSe={self.prdSe}&startPrdDe={self.startPrdDe}"
                 f"&endPrdDe={self.endPrdDe}&orgId={self.orgId}&tblId={self.tblId}"
             )
+        url = url.replace(' ', '')
         return url    
 class PRDSEENUM(Enum):
     YEAR = 'Y'
     MONTH = 'M'
     QUARTER = 'Q'
+class OBJTYPE(Enum):
+    OBJL1 = 'objL1'
+    OBJL2 = 'objL2'
+    OBJL3 = 'objL3'
+    OBJL4 = 'objL4'
+    OBJL5 = 'objL5'
+    OBJL6 = 'objL6'
+    OBJL7 = 'objL7'
+    OBJL8 = 'objL8'
     
     

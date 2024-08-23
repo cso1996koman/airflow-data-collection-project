@@ -1,6 +1,7 @@
 from airflow import DAG
-from datetime import datetime, timedelta
-from dags.logisticsinfocenter_dag import LogisticsInfoCenter
+from datetime import datetime
+from api_admin_dao import ApiAdminDao
+from logisticsinfocenter_dag import LogisticsInfoCenter
 from publicdataportal_anniversary_dag import PublicDataPortalAnniversaryDag
 from publicdataportal_holiday_dag import PublicDataPortalHolidayDag
 from publicdataportal_nationalday_dag import PublicDataPortalNationalDayDag
@@ -23,7 +24,7 @@ from yfinance_usdtokrwexchangerate_dag import YFinanceUsdToKrwExchangeRateDag
 from dateutil.relativedelta import relativedelta
 class DagFactory:
     @staticmethod
-    def dag_factory(_default_args : dict, _api_admin_dvos : List[ApiAdminDvo]) -> List[DAG]:
+    def dag_factory(_default_args : dict, _api_admin_dvos : List[ApiAdminDvo], api_admin_dao : ApiAdminDao) -> List[DAG]:
         dag_list : List[DAG] = []
         for api_admin_dvo in _api_admin_dvos:
             dvo : ApiAdminDvo = api_admin_dvo
@@ -39,17 +40,17 @@ class DagFactory:
                              api_keys = ["OTYwYjBlMGMyZmM2MmRlZDk0MjdjYWFhZWZmYTMwM2E="])
                 kosis_url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(dag_param_dvo.uri)
                 if kosis_url_obj.prdSe == PRDSEENUM.YEAR.value:
-                    schedule_interval = relativedelta(days=365)
+                    schedule_interval = relativedelta(years=1)
                     assert(len(kosis_url_obj.startPrdDe) == 4), "InvalidPrdSe"
                     start_date_str : str = f"{kosis_url_obj.startPrdDe}-01-01"
                     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")                    
                 elif kosis_url_obj.prdSe == PRDSEENUM.MONTH.value:
-                    schedule_interval = relativedelta(days=30)
+                    schedule_interval = relativedelta(months=1)
                     assert(len(kosis_url_obj.startPrdDe) == 6), "InvalidPrdSe"
                     start_date_str : str = f"{kosis_url_obj.startPrdDe[0:4]}-{kosis_url_obj.startPrdDe[4:6]}-01"
                     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
                 elif kosis_url_obj.prdSe == PRDSEENUM.QUARTER.value:
-                    schedule_interval = relativedelta(days=90)
+                    schedule_interval = relativedelta(months=3)
                     # 1분기 kosis_url_obj.startPrdDe : 20XX-01, 2분기 kosis_url_obj.startPrdDe : 20XX-02, 3분기 kosis_url_obj.startPrdDe : 20XX-03, 4분기 kosis_url_obj.startPrdDe : 20XX-04
                     assert(len(kosis_url_obj.startPrdDe) == 6), "InvalidPrdSe"
                     month : int = int(kosis_url_obj.startPrdDe[5:6])
@@ -155,19 +156,7 @@ class DagFactory:
                 else:
                     assert False, "Invalid tb_nm"
             elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.LOGISTICSINFOCENTER.value):
-                dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
-                                    tb_code = dvo.tb_code,
-                                    tb_nm = dvo.tb_nm,
-                                    eng_tb_nm = dvo.eng_tb_nm,
-                                    uri = dvo.uri,
-                                    dir_path = dvo.dir_path,
-                                    api_keys = [])
-                logisticsinfocenter_dag = LogisticsInfoCenter.create_logisticsinfocenter_dag(dag_config_param=dag_param_dvo.to_dict(),
-                                                                                             dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_LogisticsInfoCenter_{dag_param_dvo.eng_tb_nm}'),
-                                                                                             schedule_interval=relativedelta(days=1),
-                                                                                             start_date=datetime(2015, 1, 1),
-                                                                                             default_args=_default_args)
-                dag_list.append(logisticsinfocenter_dag)                                                
+                pass
             elif(dvo.src_nm == DATACOLLECTIONSOURCENAME.FRED.value):
                 if(dvo.tb_nm == FredTableName.KOREANINTERESTRATE.value):
                     dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
@@ -229,4 +218,19 @@ class DagFactory:
                 dag_list.append(yfinance_usdvokrwexchangerate_dag)
             else:
                 assert False, "Invalid src_nm"                            
+        dag_param_dvo = DagParamDvo(src_nm = dvo.src_nm,
+                                    tb_code = dvo.tb_code,
+                                    tb_nm = dvo.tb_nm,
+                                    eng_tb_nm = dvo.eng_tb_nm,
+                                    uri = dvo.uri,
+                                    dir_path = dvo.dir_path,
+                                    api_keys = ["None"])
+        logisticsinfocenter_dag = LogisticsInfoCenter.create_logisticsinfocenter_dag(dag_config_param=dag_param_dvo.to_dict(),
+                                                                                             dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'LogisticsInfoCenter'),
+                                                                                             schedule_interval=relativedelta(days=1),
+                                                                                             start_date=datetime(2015, 1, 1),
+                                                                                             default_args=_default_args,
+                                                                                             api_admin_dao=api_admin_dao)
+        dag_list.append(logisticsinfocenter_dag)
+                
         return dag_list        

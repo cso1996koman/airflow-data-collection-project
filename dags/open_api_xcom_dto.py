@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 @dataclass
-class OpenApiXcomDvo:
+class OpenApiXcomDto:
     next_request_url: Optional[str] = field(default=None)
     response_json: Optional[Dict] = field(default=None)
     csv_file_path: Optional[str] = field(default=None)
@@ -21,7 +21,7 @@ class OpenApiXcomDvo:
         }
     @staticmethod
     def from_dict(dict):
-        return OpenApiXcomDvo(next_request_url = dict['next_request_url'],
+        return OpenApiXcomDto(next_request_url = dict['next_request_url'],
                                               response_json = dict['response_json'],
                                               csv_file_path = dict['csv_file_path'],
                                               hdfs_file_path = dict['hdfs_file_path'])

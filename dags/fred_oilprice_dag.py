@@ -8,7 +8,7 @@ from airflow.models.dagrun import DagRun
 from airflow.providers.apache.hdfs.hooks.webhdfs import WebHDFSHook
 from pandas import DataFrame
 from csv_manager import CsvManager
-from open_api_xcom_dvo import OpenApiXcomDvo
+from open_api_xcom_dto import OpenApiXcomDto
 from fred_request_param_dvo import FredRequestParamDvo
 from airflow.models.taskinstance import TaskInstance
 from airflow.operators.python import get_current_context
@@ -42,7 +42,7 @@ class FredOilPriceDag:
                 oilprice_dataframe : DataFrame = pandas_datareader.get_data_fred(fred_request_param_dvo.series, start=fred_request_param_dvo.start, end=fred_request_param_dvo.end)
                 oilprice_dataframe.index = oilprice_dataframe.index.strftime("%Y-%m-%d")
                 oilprice_json : dict = json.loads(oilprice_dataframe.to_json()).get('DCOILWTICO',{})
-                open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo(response_json = oilprice_json)
+                open_api_xcom_dvo : OpenApiXcomDto = OpenApiXcomDto(response_json = oilprice_json)
                 start : datetime = datetime.strptime(fred_request_param_dvo.start, "%Y-%m-%d")
                 end : datetime = datetime.strptime(fred_request_param_dvo.end, "%Y-%m-%d")
                 start = start + relativedelta(months=1)
@@ -58,21 +58,21 @@ class FredOilPriceDag:
                 cur_dag_run : DagRun = context['dag_run']
                 cur_task_instance : TaskInstance = context['task_instance']
                 cur_dag_run_open_api_request_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_request')                
-                open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"))
+                open_api_xcom_dvo : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"))
                 oilprice_json : dict = open_api_xcom_dvo.response_json
                 csv_manager = CsvManager()
                 csv_dir_path : str = dag_config_param['dir_path']
                 csv_dir_path = csv_dir_path[1:csv_dir_path.__len__()]
-                open_api_xcom_dvo.csv_file_path = csv_dir_path
-                cur_dag_run_execution_date : datetime = cur_dag_run.execution_date
-                csv_manager.save_csv(oilprice_json, csv_dir_path.replace("TIMESTAMP", cur_dag_run_execution_date.strftime("%Y-%m-%d")))
+                csv_dir_path = csv_dir_path.replace("TIMESTAMP", cur_dag_run.execution_date.strftime("%Y-%m-%d"))                
+                open_api_xcom_dvo.csv_file_path = csv_dir_path                
+                csv_manager.save_csv(oilprice_json, csv_dir_path)
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=open_api_xcom_dvo.to_dict())
             @task
             def open_api_hdfs_save():
                 context = get_current_context()
                 cur_dag_run : DagRun = context['dag_run']
                 cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')                
-                open_api_xcom_dvo : OpenApiXcomDvo = OpenApiXcomDvo.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"))
+                open_api_xcom_dvo : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"))
                 csv_dir_path : str = open_api_xcom_dvo.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')

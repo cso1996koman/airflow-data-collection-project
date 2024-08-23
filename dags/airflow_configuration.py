@@ -23,7 +23,7 @@ api_admin_dvos_byyfinance : List[ApiAdminDvo] = api_admin_dao.selectBySrcNm('Yfi
 Variable.set("kosis_api_key", "OTYwYjBlMGMyZmM2MmRlZDk0MjdjYWFhZWZmYTMwM2E=")
 Variable.set("fred_api_key", "gAsNsUhyrbEmGPOt/eP8GO1Bf5ALh/akqttu0dJIpnR/q1LS2o+Ym0v8SDoMMTvAxNR8G1wNmB/xEWlf9CrSyg==")
 api_admin_dvos = api_admin_dvos_bykosis + api_admin_dvos_bypublicdataportal + api_admin_dvos_bypandas + api_admin_dvos_byyfinance
-dags : List[DAG] = DagFactory.dag_factory(default_args, api_admin_dvos)
+dags : List[DAG] = DagFactory.dag_factory(default_args, api_admin_dvos, api_admin_dao)
 
 for dag in dags:
     logging.info(f"Type of dag: {type(dag)}")   
