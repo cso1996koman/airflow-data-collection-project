@@ -1,19 +1,20 @@
-from datetime import datetime, timedelta
-import json
-import logging
-from dateutil.relativedelta import relativedelta
 from airflow.decorators import dag, task
 from airflow import DAG
 from airflow.models.dagrun import DagRun
 from airflow.providers.apache.hdfs.hooks.webhdfs import WebHDFSHook
+from airflow.models.taskinstance import TaskInstance
+from airflow.operators.python import get_current_context
+from airflow.utils.context import Context
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
+import pandas_datareader.data
+import json
+import logging
+import ast
 from csv_manager import CsvManager
 from open_api_xcom_dto import OpenApiXcomDto
 from fred_request_param_dvo import FredRequestParamDvo
-from airflow.models.taskinstance import TaskInstance
-from airflow.operators.python import get_current_context
-import ast
-import pandas_datareader.data
 class FredOilPriceDag:
     def create_fred_oilprice_dag(dag_config_param : dict, dag_id : str, schedule_interval : timedelta, start_date : datetime, default_args : dict) -> DAG:
         @dag(dag_id=dag_id,
@@ -24,56 +25,67 @@ class FredOilPriceDag:
         def fred_oilprice_dag() -> DAG:
             @task
             def open_api_request():
-                context = get_current_context()
-                cur_task_instance : TaskInstance = context['task_instance']
+                cur_context : Context = get_current_context()
+                cur_task_instance : TaskInstance = cur_context['task_instance']
                 prev_task_instance : TaskInstance = cur_task_instance.get_previous_ti()
-                fred_request_param_dic : dict = {}
-                fred_request_param_dvo : FredRequestParamDvo = None
+                prev_or_first_task_instance_request_param_dvo : FredRequestParamDvo = None
+                
                 if(prev_task_instance is None):                    
-                    fred_request_param_str : str = dag_config_param['uri']
-                    fred_request_param_dic : dict = ast.literal_eval(fred_request_param_str)
-                    fred_request_param_dvo = FredRequestParamDvo.from_dict(fred_request_param_dic)
-                    fred_request_param_dvo.end = datetime.strftime(datetime.strptime(fred_request_param_dvo.start , "%Y-%m-%d") + relativedelta(months=1), "%Y-%m-%d")
+                    config_request_param_str : str = dag_config_param['uri']
+                    config_request_param_dict : dict = ast.literal_eval(config_request_param_str)
+                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(config_request_param_dict)
+                    prev_or_first_task_instance_request_param_dvo.end = datetime.strftime(datetime.strptime(prev_or_first_task_instance_request_param_dvo.start , "%Y-%m-%d")
+                                                                                          + relativedelta(months=1) + relativedelta(days=-1),
+                                                                                          "%Y-%m-%d")
                 else:
-                    fred_request_param_dic : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
-                    fred_request_param_dic = fred_request_param_dic.get('next_request_url',{})
-                    fred_request_param_dvo = FredRequestParamDvo.from_dict(fred_request_param_dic)
-                    logging.info(f"fred_request_param_dvo: {fred_request_param_dvo.series}{fred_request_param_dvo.start}{fred_request_param_dvo.end}{fred_request_param_dvo.api_key}")
-                oilprice_dataframe : DataFrame = pandas_datareader.get_data_fred(fred_request_param_dvo.series, start=fred_request_param_dvo.start, end=fred_request_param_dvo.end)
+                    prev_task_instance_xcom_dict : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
+                    prev_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)
+                    prev_or_first_task_instance_request_param_dict : dict = ast.literal_eval(prev_task_instance_xcom_dto.next_request_url)
+                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(prev_or_first_task_instance_request_param_dict)
+                    request_param_dict = prev_or_first_task_instance_request_param_dvo.get('next_request_url',{})
+                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(request_param_dict)
+                    logging.info(f"prev_or_first_task_instance_request_param_dvo: {prev_or_first_task_instance_request_param_dvo.series}{prev_or_first_task_instance_request_param_dvo.start}{prev_or_first_task_instance_request_param_dvo.end}{prev_or_first_task_instance_request_param_dvo.api_key}")
+                    
+                oilprice_dataframe : DataFrame = pandas_datareader.get_data_fred(prev_or_first_task_instance_request_param_dvo.series,
+                                                                                 start=prev_or_first_task_instance_request_param_dvo.start, 
+                                                                                 end=prev_or_first_task_instance_request_param_dvo.end)
                 oilprice_dataframe.index = oilprice_dataframe.index.strftime("%Y-%m-%d")
                 oilprice_json : dict = json.loads(oilprice_dataframe.to_json()).get('DCOILWTICO',{})
-                open_api_xcom_dvo : OpenApiXcomDto = OpenApiXcomDto(response_json = oilprice_json)
-                start : datetime = datetime.strptime(fred_request_param_dvo.start, "%Y-%m-%d")
-                end : datetime = datetime.strptime(fred_request_param_dvo.end, "%Y-%m-%d")
+                start : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.start, "%Y-%m-%d")
+                end : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.end, "%Y-%m-%d")
                 start = start + relativedelta(months=1)
                 end = end + relativedelta(months=1)
-                fred_request_param_dvo.start = start.strftime("%Y-%m-%d")
-                fred_request_param_dvo.end = end.strftime("%Y-%m-%d")
-                logging.info(f"fred_request_param_dvo: {fred_request_param_dvo.series}{fred_request_param_dvo.start}{fred_request_param_dvo.end}{fred_request_param_dvo.api_key}")
-                open_api_xcom_dvo.next_request_url = fred_request_param_dvo.to_dict()
-                cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=open_api_xcom_dvo.to_dict())                
+                prev_or_first_task_instance_request_param_dvo.start = start.strftime("%Y-%m-%d")
+                prev_or_first_task_instance_request_param_dvo.end = end.strftime("%Y-%m-%d")
+                log_str : str = f"prev_or_first_task_instance_request_param_dvo: {prev_or_first_task_instance_request_param_dvo.series}{prev_or_first_task_instance_request_param_dvo.start}{prev_or_first_task_instance_request_param_dvo.end}{prev_or_first_task_instance_request_param_dvo.api_key}"
+                logging.info(log_str)
+                cur_task_instance_xcom_dto = OpenApiXcomDto(response_json = oilprice_json, next_request_url = prev_or_first_task_instance_request_param_dvo.to_dict())
+                cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=cur_task_instance_xcom_dto.to_dict())
             @task
             def open_api_csv_save():
-                context = get_current_context()
-                cur_dag_run : DagRun = context['dag_run']
-                cur_task_instance : TaskInstance = context['task_instance']
-                cur_dag_run_open_api_request_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_request')                
-                open_api_xcom_dvo : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"))
-                oilprice_json : dict = open_api_xcom_dvo.response_json
+                cur_context : Context = get_current_context()
+                cur_dag_run : DagRun = cur_context['dag_run']
+                cur_task_instance : TaskInstance = cur_context['task_instance']
+                cur_dag_run_open_api_request_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_request')
+                xcom_key_str = f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"
+                cur_dag_run_open_api_request_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=xcom_key_str))
+                oilprice_json : dict = ast.literal_eval(cur_dag_run_open_api_request_task_instance_xcom_dto.response_json)
                 csv_manager = CsvManager()
                 csv_dir_path : str = dag_config_param['dir_path']
                 csv_dir_path = csv_dir_path[1:csv_dir_path.__len__()]
-                csv_dir_path = csv_dir_path.replace("TIMESTAMP", cur_dag_run.execution_date.strftime("%Y-%m-%d"))                
-                open_api_xcom_dvo.csv_file_path = csv_dir_path                
+                csv_dir_path = csv_dir_path.replace("TIMESTAMP", cur_dag_run.execution_date.strftime("%Y-%m-%d"))
                 csv_manager.save_csv(oilprice_json, csv_dir_path)
-                cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=open_api_xcom_dvo.to_dict())
+                cur_dag_run_open_api_csv_save_task_instance_xcom_dto = cur_dag_run_open_api_request_task_instance_xcom_dto
+                cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path = csv_dir_path
+                cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=cur_dag_run_open_api_csv_save_task_instance_xcom_dto.to_dict())
             @task
             def open_api_hdfs_save():
-                context = get_current_context()
-                cur_dag_run : DagRun = context['dag_run']
-                cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')                
-                open_api_xcom_dvo : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"))
-                csv_dir_path : str = open_api_xcom_dvo.csv_file_path
+                cur_context : Context = get_current_context()
+                cur_dag_run : DagRun = cur_context['dag_run']
+                cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')
+                xcom_dict : dict = cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}")
+                cur_dag_run_open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(xcom_dict)
+                csv_dir_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
                     hdfs_client = hdfs_hook.get_conn()

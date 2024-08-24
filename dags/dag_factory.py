@@ -1,5 +1,7 @@
 from airflow import DAG
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from typing import List
 from api_admin_dao import ApiAdminDao
 from logisticsinfocenter_dag import LogisticsInfoCenter
 from publicdataportal_anniversary_dag import PublicDataPortalAnniversaryDag
@@ -15,13 +17,11 @@ from kosis_url import PRDSEENUM, KosisUrl
 from dag_param_dvo import DagParamDvo
 from url_object_factory import UrlObjectFactory
 from api_admin_dvo import ApiAdminDvo
-from typing import List
 from fred_table_name_enum import FredTableName
 from fred_koreaninterestrate_dag import FredKoreanInterestRateDag
 from fred_usinterestrate_dag import FredUsInterestRateDag
 from fred_oilprice_dag import FredOilPriceDag
 from yfinance_usdtokrwexchangerate_dag import YFinanceUsdToKrwExchangeRateDag
-from dateutil.relativedelta import relativedelta
 class DagFactory:
     @staticmethod
     def dag_factory(_default_args : dict, _api_admin_dvos : List[ApiAdminDvo], api_admin_dao : ApiAdminDao) -> List[DAG]:
