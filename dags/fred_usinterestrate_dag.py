@@ -42,9 +42,7 @@ class FredUsInterestRateDag:
                     prev_task_instance_xcom_key_str : str = f"{dag_id}_{prev_task_instance_or_none.task_id}_{prev_task_instance_or_none.run_id}"
                     prev_task_instance_xcom_dict : dict = prev_task_instance_or_none.xcom_pull(key=prev_task_instance_xcom_key_str)
                     prev_task_instance_xcom_dto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)
-                    request_param_dict = ast.literal_eval(prev_task_instance_xcom_dto.next_request_url)
-                    request_param_dict = request_param_dict.get('next_request_url',{})
-                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(request_param_dict)
+                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(prev_task_instance_xcom_dto.next_request_url)
                     
                 usinterestrate_dataframe : DataFrame = pandas_datareader.get_data_fred(prev_or_first_task_instance_request_param_dvo.series,
                                                                                        start = prev_or_first_task_instance_request_param_dvo.start,

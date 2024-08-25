@@ -80,9 +80,6 @@ class OpenApiHelper:
                 logging.info(f"get_response_content :{response.content}")
                 if tb_nm == PublicDataPortalTableName.WEATHERSTATICS.value:                    
                     response_json = response.json().get('response', {})
-                    if type(response_json) ==  dict:
-                        if response_json.get('header') is not None:
-                            assert False, f"Error fetching data: {response_json.get('header').get('resultCode')}"
                     body_json = response_json.get('body', {})
                     items_json = body_json.get('items', {})
                     item_json = items_json.get('item', {})

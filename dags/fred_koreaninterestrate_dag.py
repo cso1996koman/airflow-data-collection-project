@@ -39,9 +39,7 @@ class FredKoreanInterestRateDag:
                 else:
                     pre_task_instance_xcom_key_str : str = f"{dag_id}_{prev_task_instance_or_none.task_id}_{prev_task_instance_or_none.run_id}"
                     pre_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance_or_none.xcom_pull(key=pre_task_instance_xcom_key_str))
-                    prev_task_instance_xcom_request_param_dic : dict = ast.literal_eval(pre_task_instance_xcom_dto.next_request_url)
-                    prev_task_instance_xcom_request_param_dic = prev_task_instance_xcom_request_param_dic.get('next_request_url',{})
-                    prev_task_instance_xcom_request_param_dvo = FredRequestParamDvo.from_dict(prev_task_instance_xcom_request_param_dic)
+                    prev_task_instance_xcom_request_param_dvo = FredRequestParamDvo.from_dict(pre_task_instance_xcom_dto.next_request_url)
                     
                 koreaninterestrate_dataframe : DataFrame = pandas_datareader.data.get_data_fred(prev_task_instance_xcom_request_param_dvo.series,
                                                                                            start = prev_task_instance_xcom_request_param_dvo.start,

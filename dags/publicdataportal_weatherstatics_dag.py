@@ -66,7 +66,7 @@ class PublicDataPortalWeatherStaticsDag:
                     next_end_datetime_obj : datetime = next_start_datetime_obj + reamining_days_datetime_obj
                     cur_reqeust_url_obj.endDt = next_end_datetime_obj.strftime('%Y%m%d')
                 next_cur_request_url = cur_reqeust_url_obj.getFullUrl()
-                cur_task_instance_xcom_dto = OpenApiXcomDto(next_cur_request_url = next_cur_request_url, response_json = response_json)
+                cur_task_instance_xcom_dto = OpenApiXcomDto(next_request_url = next_cur_request_url, response_json = response_json)
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=cur_task_instance_xcom_dto.to_dict())
             @task
             def open_api_csv_save():

@@ -40,11 +40,9 @@ class FredOilPriceDag:
                 else:
                     prev_task_instance_xcom_dict : dict = prev_task_instance_or_none.xcom_pull(key=f"{dag_id}_{prev_task_instance_or_none.task_id}_{prev_task_instance_or_none.run_id}")
                     prev_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)
-                    prev_request_param_str : str = prev_task_instance_xcom_dto.next_request_url
-                    prev_request_param_dic : dict = ast.literal_eval(prev_request_param_str)
-                    prev_or_first_task_instance_request_param_str : str = prev_task_instance_xcom_dict.get('next_request_url',{})
-                    prev_or_first_task_instance_request_param_dict : dict = ast.literal_eval(prev_or_first_task_instance_request_param_str)
-                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(prev_or_first_task_instance_request_param_dict)
+                    prev_request_param_url = prev_task_instance_xcom_dto.next_request_url
+
+                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(prev_request_param_url)
                                         
                 oilprice_dataframe : DataFrame = pandas_datareader.get_data_fred(prev_or_first_task_instance_request_param_dvo.series,
                                                                                  start=prev_or_first_task_instance_request_param_dvo.start, 
@@ -67,7 +65,7 @@ class FredOilPriceDag:
                 cur_dag_run_open_api_request_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_request')
                 xcom_key_str = f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"
                 cur_dag_run_open_api_request_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=xcom_key_str))
-                oilprice_json : dict = ast.literal_eval(cur_dag_run_open_api_request_task_instance_xcom_dto.response_json)
+                oilprice_json : dict = cur_dag_run_open_api_request_task_instance_xcom_dto.response_json
                 csv_manager = CsvManager()
                 csv_dir_path : str = dag_config_param['dir_path']
                 csv_dir_path = csv_dir_path[1:csv_dir_path.__len__()]
