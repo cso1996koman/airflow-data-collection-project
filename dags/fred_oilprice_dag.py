@@ -27,10 +27,10 @@ class FredOilPriceDag:
             def open_api_request():
                 cur_context : Context = get_current_context()
                 cur_task_instance : TaskInstance = cur_context['task_instance']
-                prev_task_instance : TaskInstance = cur_task_instance.get_previous_ti()
+                prev_task_instance_or_none : TaskInstance = cur_task_instance.get_previous_ti()
                 prev_or_first_task_instance_request_param_dvo : FredRequestParamDvo = None
                 
-                if(prev_task_instance is None):                    
+                if(prev_task_instance_or_none is None):                    
                     config_request_param_str : str = dag_config_param['uri']
                     config_request_param_dict : dict = ast.literal_eval(config_request_param_str)
                     prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(config_request_param_dict)
@@ -38,14 +38,14 @@ class FredOilPriceDag:
                                                                                           + relativedelta(months=1) + relativedelta(days=-1),
                                                                                           "%Y-%m-%d")
                 else:
-                    prev_task_instance_xcom_dict : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
+                    prev_task_instance_xcom_dict : dict = prev_task_instance_or_none.xcom_pull(key=f"{dag_id}_{prev_task_instance_or_none.task_id}_{prev_task_instance_or_none.run_id}")
                     prev_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)
-                    prev_or_first_task_instance_request_param_dict : dict = ast.literal_eval(prev_task_instance_xcom_dto.next_request_url)
+                    prev_request_param_str : str = prev_task_instance_xcom_dto.next_request_url
+                    prev_request_param_dic : dict = ast.literal_eval(prev_request_param_str)
+                    prev_or_first_task_instance_request_param_str : str = prev_task_instance_xcom_dict.get('next_request_url',{})
+                    prev_or_first_task_instance_request_param_dict : dict = ast.literal_eval(prev_or_first_task_instance_request_param_str)
                     prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(prev_or_first_task_instance_request_param_dict)
-                    request_param_dict = prev_or_first_task_instance_request_param_dvo.get('next_request_url',{})
-                    prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(request_param_dict)
-                    logging.info(f"prev_or_first_task_instance_request_param_dvo: {prev_or_first_task_instance_request_param_dvo.series}{prev_or_first_task_instance_request_param_dvo.start}{prev_or_first_task_instance_request_param_dvo.end}{prev_or_first_task_instance_request_param_dvo.api_key}")
-                    
+                                        
                 oilprice_dataframe : DataFrame = pandas_datareader.get_data_fred(prev_or_first_task_instance_request_param_dvo.series,
                                                                                  start=prev_or_first_task_instance_request_param_dvo.start, 
                                                                                  end=prev_or_first_task_instance_request_param_dvo.end)
@@ -54,11 +54,9 @@ class FredOilPriceDag:
                 start : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.start, "%Y-%m-%d")
                 end : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.end, "%Y-%m-%d")
                 start = start + relativedelta(months=1)
-                end = end + relativedelta(months=1)
+                end = end + relativedelta(months=1) + relativedelta(days=-1)
                 prev_or_first_task_instance_request_param_dvo.start = start.strftime("%Y-%m-%d")
                 prev_or_first_task_instance_request_param_dvo.end = end.strftime("%Y-%m-%d")
-                log_str : str = f"prev_or_first_task_instance_request_param_dvo: {prev_or_first_task_instance_request_param_dvo.series}{prev_or_first_task_instance_request_param_dvo.start}{prev_or_first_task_instance_request_param_dvo.end}{prev_or_first_task_instance_request_param_dvo.api_key}"
-                logging.info(log_str)
                 cur_task_instance_xcom_dto = OpenApiXcomDto(response_json = oilprice_json, next_request_url = prev_or_first_task_instance_request_param_dvo.to_dict())
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=cur_task_instance_xcom_dto.to_dict())
             @task
@@ -83,7 +81,8 @@ class FredOilPriceDag:
                 cur_context : Context = get_current_context()
                 cur_dag_run : DagRun = cur_context['dag_run']
                 cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')
-                xcom_dict : dict = cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}")
+                cur_dag_run_open_api_csv_save_xcom_key_str : str = f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"
+                xcom_dict : dict = cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=cur_dag_run_open_api_csv_save_xcom_key_str)
                 cur_dag_run_open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(xcom_dict)
                 csv_dir_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 try:

@@ -20,7 +20,9 @@ class OpenApiHelper:
             param_list.append(f"{part}+")
         return param_list
     def get_appeneded_response_bymulti_unit_param(self, xcom_request_url_obj : KosisUrl, unit_params: List[str], obj_type : str) -> Dict:
+        logging.info(f"xcom_request_url_obj : {xcom_request_url_obj.get_full_url()}")
         url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(xcom_request_url_obj.get_full_url())
+        logging.info(f"url_obj : {url_obj.get_full_url()}")
         merged_json_responses : List[Dict] = None
         for param in unit_params:
             logging.info(f"param : {param}, paramType : {type(param)}")
@@ -42,7 +44,10 @@ class OpenApiHelper:
                 url_obj.objL8 = param
             else:
                 assert False, f"Invalid obj_type: {obj_type}"
+            assert url_obj.apiKey is not None, "apiKey is None"
+            logging.info(f"url_obj : {url_obj.get_full_url()}")
             request_url : str = url_obj.get_full_url().strip()
+            logging.info(f"request_url : {request_url}")
             response : requests.Response = requests.get(request_url)
             if response.status_code == 200:
                 # KosisErrorResponseMessageDict : {"err": "errNo", "errMsg": "errMessage"}
@@ -70,11 +75,18 @@ class OpenApiHelper:
                 assert False, f"Error fetching data: {response.status_code}"
         elif src_nm == DATACOLLECTIONSOURCENAME.PUBLICDATAPORTAL.value:
             response : requests.Response = requests.get(url_str)
-            response_json : json = None
+            response_json_result : json = None
             if response.status_code == 200:
                 logging.info(f"get_response_content :{response.content}")
                 if tb_nm == PublicDataPortalTableName.WEATHERSTATICS.value:                    
-                    response_json = response.json().get('response', {}).get('body', {}).get('items', {}).get('item', {})
+                    response_json = response.json().get('response', {})
+                    if type(response_json) ==  dict:
+                        if response_json.get('header') is not None:
+                            assert False, f"Error fetching data: {response_json.get('header').get('resultCode')}"
+                    body_json = response_json.get('body', {})
+                    items_json = body_json.get('items', {})
+                    item_json = items_json.get('item', {})
+                    response_json_result = item_json
                 else:
                     xml_data = response.content
                     json_data = json.loads(json.dumps(xmltodict.parse(xml_data)))                    
@@ -82,10 +94,10 @@ class OpenApiHelper:
                     body_json = response_json.get('body', {})
                     items_json = body_json.get('items', {})
                     if items_json is not None:
-                        response_json = items_json.get('item', {})
+                        response_json_result = items_json.get('item', {})
             else:
-                assert False, f"Error fetching data: {response.status_code}"
-            return response_json
+                assert False, f"Error fetching data: {response_json_result.status_code}"
+            return response_json_result
     def assert_valid_unit_param(self, unit_param: str):
         parts = unit_param.split('+')
         for part in parts:

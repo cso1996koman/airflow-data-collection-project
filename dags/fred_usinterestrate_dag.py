@@ -27,24 +27,26 @@ class FredUsInterestRateDag:
             def open_api_request():
                 cur_context : Context = get_current_context()
                 cur_task_instance : TaskInstance = cur_context['task_instance']
-                prev_task_instance : TaskInstance = cur_task_instance.get_previous_ti()
+                prev_task_instance_or_none : TaskInstance = cur_task_instance.get_previous_ti()
                 prev_or_first_task_instance_request_param_dvo : FredRequestParamDvo = None
                 
-                if(prev_task_instance is None):                    
+                if(prev_task_instance_or_none is None):                    
                     config_request_param_str : str = dag_config_param['uri']
                     config_request_param_dic : dict = ast.literal_eval(config_request_param_str)
                     prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(config_request_param_dic)
-                    datetime_obj = datetime.strptime(prev_or_first_task_instance_request_param_dvo.start, "%Y-%m-%d") + relativedelta(months=1) + relativedelta(days=-1)
-                    datetime_str = datetime.strftime(datetime_obj, "%Y-%m-%d")
-                    prev_or_first_task_instance_request_param_dvo.end = datetime_str
+                    first_task_instance_request_param_start_datetime : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.start, "%Y-%m-%d")
+                    end_datetime_obj : datetime = first_task_instance_request_param_start_datetime + relativedelta(months=1) + relativedelta(days=-1)
+                    end_datetime_str = datetime.strftime(end_datetime_obj, "%Y-%m-%d")
+                    prev_or_first_task_instance_request_param_dvo.end = end_datetime_str
                 else:
-                    prev_task_instance_xcom_dict : dict = prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}")
+                    prev_task_instance_xcom_key_str : str = f"{dag_id}_{prev_task_instance_or_none.task_id}_{prev_task_instance_or_none.run_id}"
+                    prev_task_instance_xcom_dict : dict = prev_task_instance_or_none.xcom_pull(key=prev_task_instance_xcom_key_str)
                     prev_task_instance_xcom_dto = OpenApiXcomDto.from_dict(prev_task_instance_xcom_dict)
                     request_param_dict = ast.literal_eval(prev_task_instance_xcom_dto.next_request_url)
                     request_param_dict = request_param_dict.get('next_request_url',{})
                     prev_or_first_task_instance_request_param_dvo = FredRequestParamDvo.from_dict(request_param_dict)
                     
-                usinterestrate_dataframe : DataFrame = pandas_datareader.get_data_fred(series = prev_or_first_task_instance_request_param_dvo.series,
+                usinterestrate_dataframe : DataFrame = pandas_datareader.get_data_fred(prev_or_first_task_instance_request_param_dvo.series,
                                                                                        start = prev_or_first_task_instance_request_param_dvo.start,
                                                                                        end = prev_or_first_task_instance_request_param_dvo.end)
                 usinterestrate_dataframe.index = usinterestrate_dataframe.index.strftime("%Y-%m-%d")

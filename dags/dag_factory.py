@@ -167,7 +167,7 @@ class DagFactory:
                                     dir_path = dvo.dir_path,
                                     api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
                     fred_koreaninterestrate_dag = FredKoreanInterestRateDag.create_fred_koreaninterestrate_dag(dag_config_param=dag_param_dvo.to_dict(),
-                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Fred_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
@@ -181,7 +181,7 @@ class DagFactory:
                                     dir_path = dvo.dir_path,
                                     api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
                     fred_usinterestrate_dag = FredUsInterestRateDag.create_fred_usinterestrate_dag(dag_config_param=dag_param_dvo.to_dict(),
-                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Fred_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)
@@ -195,7 +195,7 @@ class DagFactory:
                                     dir_path = dvo.dir_path,
                                     api_keys = ["fb85ea45398d2cb8aed6c2842f81c936"])
                     fred_oilprice_dag = FredOilPriceDag.create_fred_oilprice_dag(dag_config_param=dag_param_dvo.to_dict(),
-                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Pandas_{dag_param_dvo.eng_tb_nm}'),
+                                                                                                                dag_id=dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_Fred_{dag_param_dvo.eng_tb_nm}'),
                                                                                                                 schedule_interval=relativedelta(months=1),
                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                 default_args=_default_args)

@@ -13,7 +13,7 @@ class UrlObjectFactory:
     def createKosisUrl(fullUrl : str) -> KosisUrl:
         logging.info(f"fullUrl: {fullUrl}")
         baseUrl = UrlObjectFactory.extractKosisBaseUrl(fullUrl)
-        apikey = UrlObjectFactory.extractParameter(fullUrl, r'apikey=[^&]*')
+        apikey = UrlObjectFactory.extractParameter(fullUrl, r'apiKey=[^&]*')
         orgId = UrlObjectFactory.extractParameter(fullUrl, r'orgId=[^&]*')
         tblId = UrlObjectFactory.extractParameter(fullUrl, r'tblId=[^&]*')
         itmId = UrlObjectFactory.extractParameter(fullUrl, r'itmId=[^&]*')

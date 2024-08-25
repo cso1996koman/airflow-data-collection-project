@@ -27,9 +27,9 @@ class FredKoreanInterestRateDag:
             def open_api_request():
                 cur_context : Context = get_current_context()
                 cur_task_instance : TaskInstance = cur_context['task_instance']
-                prev_task_instance : TaskInstance = cur_task_instance.get_previous_ti()
+                prev_task_instance_or_none : TaskInstance = cur_task_instance.get_previous_ti()
                 prev_task_instance_xcom_request_param_dvo : FredRequestParamDvo = None
-                if(prev_task_instance is None):                    
+                if(prev_task_instance_or_none is None):                    
                     request_param_str : str = dag_config_param['uri']
                     request_param_dic : dict = ast.literal_eval(request_param_str)
                     logging.info(f"fred_request_param_dic : {request_param_dic.__str__()}")
@@ -37,24 +37,26 @@ class FredKoreanInterestRateDag:
                     prev_task_instance_xcom_request_param_dvo.end = datetime.strftime(datetime.strptime(prev_task_instance_xcom_request_param_dvo.start, "%Y-%m-%d")
                                                                                       + relativedelta(months=1) + relativedelta(days=-1), "%Y-%m-%d") 
                 else:
-                    pre_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance.xcom_pull(key=f"{dag_id}_{prev_task_instance.task_id}_{prev_task_instance.run_id}"))
+                    pre_task_instance_xcom_key_str : str = f"{dag_id}_{prev_task_instance_or_none.task_id}_{prev_task_instance_or_none.run_id}"
+                    pre_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(prev_task_instance_or_none.xcom_pull(key=pre_task_instance_xcom_key_str))
                     prev_task_instance_xcom_request_param_dic : dict = ast.literal_eval(pre_task_instance_xcom_dto.next_request_url)
                     prev_task_instance_xcom_request_param_dic = prev_task_instance_xcom_request_param_dic.get('next_request_url',{})
                     prev_task_instance_xcom_request_param_dvo = FredRequestParamDvo.from_dict(prev_task_instance_xcom_request_param_dic)
                     
-                koreaninterestrate_dataframe : DataFrame = pandas_datareader.get_data_fred(prev_task_instance_xcom_request_param_dvo.series,
-                                                                                           start=prev_task_instance_xcom_request_param_dvo.start,
-                                                                                           end=prev_task_instance_xcom_request_param_dvo.end)
+                koreaninterestrate_dataframe : DataFrame = pandas_datareader.data.get_data_fred(prev_task_instance_xcom_request_param_dvo.series,
+                                                                                           start = prev_task_instance_xcom_request_param_dvo.start,
+                                                                                           end = prev_task_instance_xcom_request_param_dvo.end)
                 data_frame_index_datetime : datetime = koreaninterestrate_dataframe.index
                 koreaninterestrate_dataframe.index = data_frame_index_datetime.strftime("%Y-%m-%d")
                 koreaninterestrate_dataframe_body_json : dict = json.loads(koreaninterestrate_dataframe.to_json()).get('IR3TIB01KRM156N',{})
-                start : datetime = datetime.strptime(prev_task_instance_xcom_request_param_dvo.start, "%Y-%m-%d")
-                end : datetime = datetime.strptime(prev_task_instance_xcom_request_param_dvo.end, "%Y-%m-%d")
-                start = start + relativedelta(months=1)
-                end = end + relativedelta(months=1)
-                prev_task_instance_xcom_request_param_dvo.start = start.strftime("%Y-%m-%d")
-                prev_task_instance_xcom_request_param_dvo.end = end.strftime("%Y-%m-%d")
-                cur_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto(next_request_url =  prev_task_instance_xcom_request_param_dvo.to_dict(), response_json = koreaninterestrate_dataframe_body_json)
+                prev_request_param_dvo_start_datetime_obj : datetime = datetime.strptime(prev_task_instance_xcom_request_param_dvo.start, "%Y-%m-%d")
+                prev_request_param_dvo_end_datetime_obj : datetime = datetime.strptime(prev_task_instance_xcom_request_param_dvo.end, "%Y-%m-%d")
+                next_request_param_dvo_start = prev_request_param_dvo_start_datetime_obj + relativedelta(months=1)
+                next_request_param_dvo_end = prev_request_param_dvo_end_datetime_obj + relativedelta(months=1)
+                prev_task_instance_xcom_request_param_dvo.start = next_request_param_dvo_start.strftime("%Y-%m-%d")
+                prev_task_instance_xcom_request_param_dvo.end = next_request_param_dvo_end.strftime("%Y-%m-%d")
+                next_task_instance_xcom_request_param_dic = prev_task_instance_xcom_request_param_dvo.to_dict()
+                cur_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto(next_request_url =  next_task_instance_xcom_request_param_dic, response_json = koreaninterestrate_dataframe_body_json)
                 cur_task_instance.xcom_push(key=f"{dag_id}_{cur_task_instance.task_id}_{cur_task_instance.run_id}", value=cur_task_instance_xcom_dto.to_dict())
             @task
             def open_api_csv_save():
@@ -62,7 +64,8 @@ class FredKoreanInterestRateDag:
                 cur_dag_run : DagRun = cur_context['dag_run']
                 cur_task_instance : TaskInstance = cur_context['task_instance']
                 cur_dag_run_open_api_request_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_request')
-                cur_dag_run_open_api_request_task_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"))
+                cur_dag_run_open_api_request_xcom_key_str : str = f"{dag_id}_{cur_dag_run_open_api_request_task_instance.task_id}_{cur_dag_run_open_api_request_task_instance.run_id}"
+                cur_dag_run_open_api_request_task_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance.xcom_pull(key=cur_dag_run_open_api_request_xcom_key_str))
                 koreaninterestrate_json : dict = cur_dag_run_open_api_request_task_xcom_dto.response_json
                 csv_manager = CsvManager()
                 csv_dir_path : str = dag_config_param['dir_path']
@@ -78,7 +81,8 @@ class FredKoreanInterestRateDag:
                 cur_context : Context = get_current_context()
                 cur_dag_run : DagRun = cur_context['dag_run']
                 cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')
-                cur_dag_run_open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"))
+                cur_dag_run_open_api_csv_save_xcom_key_str : str = f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"
+                cur_dag_run_open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=cur_dag_run_open_api_csv_save_xcom_key_str))
                 csv_dir_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
