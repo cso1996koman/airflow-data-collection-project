@@ -5,6 +5,7 @@ from airflow.providers.apache.hdfs.hooks.webhdfs import WebHDFSHook
 from airflow.utils.context import Context
 from airflow.models.taskinstance import TaskInstance
 from airflow.operators.python import get_current_context
+from airflow.providers.apache.hdfs.hooks.webhdfs import InsecureClient
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import json
@@ -47,6 +48,7 @@ class YFinanceUsdToKrwExchangeRateDag:
                                                                                start=prev_or_first_task_instance_yfinanceusdtokrwexchangerate_request_param.start,
                                                                                end=prev_or_first_task_instance_yfinanceusdtokrwexchangerate_request_param.end,
                                                                                interval=prev_or_first_task_instance_yfinanceusdtokrwexchangerate_request_param.interval)
+                usdtokrwexchangerate_dataframe.index = usdtokrwexchangerate_dataframe.index.strftime("%Y-%m-%d")
                 usdtokrwexchangerate_json : dict = json.loads(usdtokrwexchangerate_dataframe.to_json())
                 cur_task_instance_xcom_yfinanceusdtokrwexchangerate_request_param = YFinanceUsdToKrwExchangeRateRequestParam(ticker = prev_or_first_task_instance_yfinanceusdtokrwexchangerate_request_param.ticker,
                                                                                                                             start = prev_or_first_task_instance_yfinanceusdtokrwexchangerate_request_param.start,
@@ -87,10 +89,11 @@ class YFinanceUsdToKrwExchangeRateDag:
                 cur_dag_run_open_api_csv_save_task_instance_xcom = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=cur_dag_run_open_api_csv_save_xcom_key_str))
                 csv_file_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom.csv_file_path
                 try:
+                    # while hdfs_client file upload, if file already exists, overwrite it
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
-                    hdfs_csv_path = csv_file_path
-                    hdfs_client.upload(hdfs_csv_path, csv_file_path)
+                    hdfs_client : InsecureClient = hdfs_hook.get_conn()
+                    hdfs_file_path = csv_file_path
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
                     logging.info("File uploaded to HDFS successfully")
                     # os.remove(file_path)
                 except Exception as e:

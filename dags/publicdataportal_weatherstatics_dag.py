@@ -5,6 +5,7 @@ from airflow.operators.python import get_current_context
 from airflow.models import TaskInstance
 from airflow.models import DagRun
 from airflow.utils.context import Context
+from airflow.providers.apache.hdfs.hooks.webhdfs import InsecureClient
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from csv_manager import CsvManager
@@ -102,7 +103,9 @@ class PublicDataPortalWeatherStaticsDag:
                 csv_file_path = cur_dag_run_open_api_csv_save_xcom_dto.csv_file_path
                 hdfs_file_path = csv_file_path
                 webhdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                webhdfs_hook.load_file(csv_file_path, hdfs_file_path)                
+                hdfs_client : InsecureClient = webhdfs_hook.get_conn()
+                # if csv_file_path is already existed, overwrite it
+                hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
             open_api_request_task = open_api_request()
             open_api_csv_save_task = open_api_csv_save()
             open_api_hdfs_save_task = open_api_hdfs_save()

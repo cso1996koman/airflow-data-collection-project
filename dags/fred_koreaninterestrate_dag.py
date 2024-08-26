@@ -81,12 +81,12 @@ class FredKoreanInterestRateDag:
                 cur_dag_run_open_api_csv_save_task_instance : TaskInstance = cur_dag_run.get_task_instance(task_id='open_api_csv_save')
                 cur_dag_run_open_api_csv_save_xcom_key_str : str = f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"
                 cur_dag_run_open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=cur_dag_run_open_api_csv_save_xcom_key_str))
-                csv_dir_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
+                csv_file_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
-                    hdfs_csv_path = csv_dir_path
-                    hdfs_client.upload(hdfs_csv_path, csv_dir_path)
+                    hdfs_client : WebHDFSHook = hdfs_hook.get_conn()
+                    hdfs_file_path = csv_file_path
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
                     logging.info("File uploaded to HDFS successfully")
                     # os.remove(file_path)
                 except Exception as e:

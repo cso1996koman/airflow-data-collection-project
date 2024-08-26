@@ -5,6 +5,7 @@ from airflow.decorators import dag, task
 from airflow import DAG
 from airflow.operators.python import get_current_context
 from airflow.utils.context import Context
+from airflow.providers.apache.hdfs.hooks.webhdfs import InsecureClient
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import logging
@@ -52,7 +53,9 @@ class PublicDataPortalTraditionalDayDag:
                 response_json = open_api_helper.get_response(cur_request_url, dag_config_param['src_nm'], dag_config_param['tb_nm'])
                 cur_request_url_obj = UrlObjectFactory.createPublicDataPortalTraditionalDayUrl(cur_request_url)
                 cur_request_url_datetime_obj : datetime = datetime.strptime(f"{cur_request_url_obj.solYear}-{cur_request_url_obj.solMonth}-01","%Y-%m-%d")
-                next_request_url_datetime_obj : datetime =  cur_request_url_datetime_obj + relativedelta(months=1) + relativedelta(days=-1)
+                logging.info(f"cur_request_url_datetime_obj: {cur_request_url_datetime_obj}")
+                next_request_url_datetime_obj : datetime =  cur_request_url_datetime_obj + relativedelta(months=1)
+                logging.info(f"next_request_url_datetime_obj: {next_request_url_datetime_obj}")
                 cur_request_url_obj.solYear = next_request_url_datetime_obj.strftime('%Y')
                 cur_request_url_obj.solMonth = next_request_url_datetime_obj.strftime('%m')
                 next_request_url = cur_request_url_obj.get_full_url()
@@ -90,8 +93,9 @@ class PublicDataPortalTraditionalDayDag:
                 hdfs_file_path : str = csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
-                    hdfs_client.upload(hdfs_file_path, csv_file_path)
+                    hdfs_client : InsecureClient = hdfs_hook.get_conn()
+                    #if hdfs_file_path is already existed, then overwrite it
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
                 except Exception as e:
                     logging.error(f"Error: {e}")                    
             open_api_request_task = open_api_request()

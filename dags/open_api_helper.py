@@ -23,6 +23,7 @@ class OpenApiHelper:
         logging.info(f"xcom_request_url_obj : {xcom_request_url_obj.get_full_url()}")
         url_obj : KosisUrl = UrlObjectFactory.createKosisUrl(xcom_request_url_obj.get_full_url())
         logging.info(f"url_obj : {url_obj.get_full_url()}")
+        url_obj.apiKey = xcom_request_url_obj.apiKey
         merged_json_responses : List[Dict] = None
         for param in unit_params:
             logging.info(f"param : {param}, paramType : {type(param)}")
@@ -92,6 +93,8 @@ class OpenApiHelper:
                     items_json = body_json.get('items', {})
                     if items_json is not None:
                         response_json_result = items_json.get('item', {})
+                    else:
+                        response_json_result = body_json
             else:
                 assert False, f"Error fetching data: {response_json_result.status_code}"
             return response_json_result

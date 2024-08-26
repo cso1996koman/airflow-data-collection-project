@@ -51,7 +51,7 @@ class FredOilPriceDag:
                 oilprice_json : dict = json.loads(oilprice_dataframe.to_json()).get('DCOILWTICO',{})
                 start : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.start, "%Y-%m-%d")
                 end : datetime = datetime.strptime(prev_or_first_task_instance_request_param_dvo.end, "%Y-%m-%d")
-                start = start + relativedelta(months=1)
+                start = start + relativedelta(months=1) + relativedelta(days=-1)
                 end = end + relativedelta(months=1) + relativedelta(days=-1)
                 prev_or_first_task_instance_request_param_dvo.start = start.strftime("%Y-%m-%d")
                 prev_or_first_task_instance_request_param_dvo.end = end.strftime("%Y-%m-%d")
@@ -82,12 +82,12 @@ class FredOilPriceDag:
                 cur_dag_run_open_api_csv_save_xcom_key_str : str = f"{dag_id}_{cur_dag_run_open_api_csv_save_task_instance.task_id}_{cur_dag_run_open_api_csv_save_task_instance.run_id}"
                 xcom_dict : dict = cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=cur_dag_run_open_api_csv_save_xcom_key_str)
                 cur_dag_run_open_api_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(xcom_dict)
-                csv_dir_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
+                csv_file_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
-                    hdfs_csv_path = csv_dir_path
-                    hdfs_client.upload(hdfs_csv_path, csv_dir_path)
+                    hdfs_client : WebHDFSHook = hdfs_hook.get_conn()
+                    hdfs_file_path = csv_file_path
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
                     logging.info("File uploaded to HDFS successfully")
                     # os.remove(file_path)
                 except Exception as e:

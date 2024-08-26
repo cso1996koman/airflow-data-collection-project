@@ -78,11 +78,12 @@ class PublicDataPortalHolidayDag:
                 cur_dag_run_open_api_csv_save_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=cur_dag_run_open_api_csv_save_xcom_key_str))
                 assert cur_dag_run_open_api_csv_save_xcom_dto is not None
                 csv_file_path : str = cur_dag_run_open_api_csv_save_xcom_dto.csv_file_path
-                try:
-                    hdfs_file_path : str = csv_file_path
+                hdfs_file_path : str = csv_file_path
+                try:                    
                     webhdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = webhdfs_hook.get_conn()
-                    hdfs_client.upload(hdfs_file_path, csv_file_path)
+                    hdfs_client : WebHDFSHook = webhdfs_hook.get_conn()                    
+                    # if hdfs_file_path is already existed, overwrite it
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
                 except Exception as e:
                     logging.error(f"Error: {e}")
             open_api_request_task = open_api_request()

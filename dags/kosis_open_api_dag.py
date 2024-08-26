@@ -127,12 +127,25 @@ class KosisOpenApiDag:
                     cur_request_url_obj.startPrdDe = start_prd_de.strftime('%Y%m')
                     cur_request_url_obj.endPrdDe = end_prd_de.strftime('%Y%m')                
                 elif prdSe == PRDSEENUM.QUARTER.value:
-                    start_prd_de = datetime.strptime(cur_request_url_obj.startPrdDe, '%Y%m').replace(tzinfo=pytz.UTC)
-                    end_prd_de = datetime.strptime(cur_request_url_obj.endPrdDe, '%Y%m').replace(tzinfo=pytz.UTC)
-                    start_prd_de += relativedelta(months=3)
-                    end_prd_de += relativedelta(months=3)
-                    cur_request_url_obj.startPrdDe = start_prd_de.strftime('%Y%m')
-                    cur_request_url_obj.endPrdDe = end_prd_de.strftime('%Y%m')
+                    cur_request_url_start_datetime_obj = datetime.strptime(cur_request_url_obj.startPrdDe, '%Y%m').replace(tzinfo=pytz.UTC)
+                    cur_request_url_end_datetime_obj = datetime.strptime(cur_request_url_obj.endPrdDe, '%Y%m').replace(tzinfo=pytz.UTC)
+                    cur_request_url_start_datetime_obj += relativedelta(months=1)
+                    cur_request_url_end_datetime_obj += relativedelta(months=1)
+                    cur_request_url_end_month_str = cur_request_url_end_datetime_obj.strftime('%m')
+                    cur_request_url_start_month_str = cur_request_url_start_datetime_obj.strftime('%m')
+                    
+                    if cur_request_url_start_month_str == '05':
+                        cur_request_url_start_datetime_obj += relativedelta(years=1)
+                        cur_request_url_start_datetime_obj = cur_request_url_start_datetime_obj.replace(month=1)
+                        cur_request_url_start_month_str = cur_request_url_start_datetime_obj.strftime('%m')
+                    if cur_request_url_end_month_str == '05':
+                        cur_request_url_end_datetime_obj += relativedelta(years=1)
+                        cur_request_url_end_datetime_obj = cur_request_url_end_datetime_obj.replace(month=1)
+                        cur_request_url_end_month_str = cur_request_url_end_datetime_obj.strftime('%m')
+
+                    cur_request_url_obj.startPrdDe = cur_request_url_start_datetime_obj.strftime('%Y%m')
+                    cur_request_url_obj.endPrdDe = cur_request_url_end_datetime_obj.strftime('%Y%m')
+                    
                 else:
                     assert False, "prdSe is not valid"
                 cur_task_instance_xcom_dto.next_request_url = cur_request_url_obj.get_full_url()
@@ -147,7 +160,8 @@ class KosisOpenApiDag:
                 cur_dag_run_open_api_request_task_instance_xcom_dict : dict = cur_dag_run_open_api_request_task_instance.xcom_pull(key=f"{dag_id}_open_api_request_{cur_dag_run_open_api_request_task_instance.run_id}")
                 assert cur_dag_run_open_api_request_task_instance_xcom_dict is not None
                 cur_dag_run_openapi_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_request_task_instance_xcom_dict)
-                csv_manager : CsvManager = CsvManager()         
+                csv_manager : CsvManager = CsvManager()
+                assert dag_config_param['dir_path'] is not None, "dir_path is None"
                 csv_dir_path : str = dag_config_param['dir_path']
                 csv_dir_path = csv_dir_path[1:csv_dir_path.__len__()]
                 csv_dir_path = csv_dir_path.replace("TIMESTAMP", cur_dag_run.execution_date.strftime('%Y%m%d'))
@@ -164,12 +178,12 @@ class KosisOpenApiDag:
                 cur_dag_run_open_api_csv_save_task_instance_xcom_dict : dict = cur_dag_run_open_api_csv_save_task_instance.xcom_pull(key=f"{dag_id}_open_api_csv_save_{cur_dag_run_open_api_csv_save_task_instance.run_id}")
                 assert cur_dag_run_open_api_csv_save_task_instance_xcom_dict is not None
                 cur_dag_run_openapi_csv_save_task_instance_xcom_dto : OpenApiXcomDto = OpenApiXcomDto.from_dict(cur_dag_run_open_api_csv_save_task_instance_xcom_dict)
-                csv_path = cur_dag_run_openapi_csv_save_task_instance_xcom_dto.csv_file_path
+                csv_file_path = cur_dag_run_openapi_csv_save_task_instance_xcom_dto.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
-                    hdfs_csv_path = csv_path
-                    hdfs_client.upload(hdfs_csv_path, csv_path)
+                    hdfs_client : WebHDFSHook = hdfs_hook.get_conn()
+                    hdfs_file_path = csv_file_path
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
                     logging.info("File uploaded to HDFS successfully")
                     # os.remove(file_path)
                 except Exception as e:

@@ -5,6 +5,7 @@ from airflow.decorators import dag, task
 from airflow import DAG
 from airflow.operators.python import get_current_context
 from airflow.utils.context import Context
+from airflow.providers.apache.hdfs.hooks.webhdfs import InsecureClient
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import logging
@@ -87,8 +88,10 @@ class PublicDataPortalSolarTermDag:
                 hdfs_file_path : str = csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_clinet = hdfs_hook.get_conn()
-                    hdfs_clinet.upload(hdfs_file_path, csv_file_path)
+                    hdfs_client : InsecureClient = hdfs_hook.get_conn()
+                    # if hdfs_file_path is already existed, overwrite it
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)
+
                 except Exception as e:
                     logging.error(f"Error: {e}")                
             open_api_request_task = open_api_request()

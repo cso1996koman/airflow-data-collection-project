@@ -81,8 +81,9 @@ class PublicDataPortalAnniversaryDag:
                 hdfs_file_path : str = csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
-                    hdfs_client.upload(hdfs_file_path, csv_file_path)
+                    hdfs_client : WebHDFSHook = hdfs_hook.get_conn()
+                    # if hdfs_file_path is already existed, overwrite it
+                    hdfs_client.upload(hdfs_file_path, csv_file_path, overwrite=True)                    
                 except Exception as e:
                     logging.error(f"Error: {e}")
             open_api_request_task = open_api_request()

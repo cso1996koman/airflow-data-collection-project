@@ -79,7 +79,7 @@ class DagFactory:
                              api_keys = ["%2BODpMm%2FIQ2XvsE4H4adLL5A5Oc7bExWMxoT1AlGn8Up%2BAzzvEQ4zxh7WhZK6Z278Of4pxFE%2Bp4Zh7XqZHTFctA%3D%3D"])
                     weatheradministration_open_api_dag : PublicDataPortalWeatherStaticsDag = PublicDataPortalWeatherStaticsDag.create_publicdataportal_weatherstatics_dag(dag_config_param=dag_param_dvo.to_dict(),
                                                                                                                                                 dag_id = dag_param_dvo.remove_except_alphanumericcharacter_dashe_dot_underscore(f'{dag_param_dvo.tb_code}_PublicDatPortal_{dag_param_dvo.eng_tb_nm}'),
-                                                                                                                                                schedule_interval=relativedelta(days=1),
+                                                                                                                                                schedule_interval=relativedelta(years=1),
                                                                                                                                                 start_date=datetime(2015, 1, 1),
                                                                                                                                                 default_args=_default_args)
                     dag_list.append(weatheradministration_open_api_dag)            

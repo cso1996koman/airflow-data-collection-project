@@ -86,9 +86,9 @@ class FredUsInterestRateDag:
                 csv_dir_path : str = cur_dag_run_open_api_csv_save_task_instance_xcom_dto.csv_file_path
                 try:
                     hdfs_hook = WebHDFSHook(webhdfs_conn_id='local_hdfs')
-                    hdfs_client = hdfs_hook.get_conn()
+                    hdfs_client : WebHDFSHook = hdfs_hook.get_conn()
                     hdfs_csv_path = csv_dir_path
-                    hdfs_client.upload(hdfs_csv_path, csv_dir_path)
+                    hdfs_client.upload(hdfs_csv_path, csv_dir_path, overwrite=True)
                     logging.info("File uploaded to HDFS successfully")
                     # os.remove(file_path)
                 except Exception as e:
